@@ -3,7 +3,7 @@ apiVersion: flux.weave.works/v1beta1
 kind: HelmRelease
 metadata:
   name: ows
-  namespace: default
+  namespace: web
   annotations:
     flux.weave.works/tag.global: glob:*
     flux.weave.works/tag.wmsConfig: glob:*
