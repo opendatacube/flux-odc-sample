@@ -1,1 +1,0 @@
-{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"odc_eks_cluster_label","Source":"git::https://github.com/cloudposse/terraform-terraform-label.git?ref=tags/0.4.0","Dir":".terraform/modules/odc_eks_cluster_label"}]}

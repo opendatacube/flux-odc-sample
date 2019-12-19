@@ -1,3 +1,3 @@
-output "autoscaler_role" {
+output "cluster_autoscaler_role" {
   value = aws_iam_role.autoscaler[0].arn
 }

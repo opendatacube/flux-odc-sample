@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="VcsDirectoryMappings">
-    <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/admin/tf/.terraform/modules/odc_eks_cluster_label" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/flux/admin/tf/.terraform/modules/odc_eks_cluster_label" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/tf/.terraform/modules/odc_eks_cluster_label" vcs="Git" />
-  </component>
-</project>
