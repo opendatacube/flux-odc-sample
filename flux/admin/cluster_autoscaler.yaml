@@ -1,0 +1,31 @@
+---
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: cluster-autoscaler
+  namespace: admin
+  annotations:
+    flux.weave.works/automated: 'true'
+    flux.weave.works/tag.chart-image: semver:*
+spec:
+  releaseName: cluster-autoscaler
+  chart:
+    # Helm Charts: https://github.com/helm/charts/tree/master/stable/cluster-autoscaler
+    repository: https://kubernetes-charts.storage.googleapis.com/
+    name: stable/cluster-autoscaler
+#    version: cluster-autoscaler
+  values:
+    image:
+      tag: "v1.14.3"
+    podAnnotations:
+      iam.amazonaws.com/role: odc-test-stage-odc-eks-autoscaler
+    rbac:
+      create: true
+    sslCertPath: /etc/kubernetes/pki/ca.crt
+    autoDiscovery:
+      clusterName: odc-test-stage-odc-eks
+    awsRegion: ap-southeast-2
+    extraArgs:
+      scale-down-unneeded-time: "10m"
+      balance-similar-node-groups: true
+      skip-nodes-with-system-pods: false
