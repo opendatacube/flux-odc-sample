@@ -13,18 +13,18 @@ spec:
     # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/cluster-autoscaler
     repository: https://kubernetes-charts.storage.googleapis.com/
     name: stable/cluster-autoscaler
-#    version: cluster-autoscaler
   values:
     image:
       tag: "v1.14.3"
+    cloudProvider: aws
     podAnnotations:
       iam.amazonaws.com/role: odc-test-stage-odc-eks-autoscaler
-    rbac:
-      create: true
-    sslCertPath: /etc/kubernetes/pki/ca.crt
     autoDiscovery:
       clusterName: odc-test-stage-odc-eks
     awsRegion: ap-southeast-2
+    rbac:
+      create: true
+    sslCertPath: /etc/kubernetes/pki/ca.crt
     extraArgs:
       scale-down-unneeded-time: "10m"
       balance-similar-node-groups: true

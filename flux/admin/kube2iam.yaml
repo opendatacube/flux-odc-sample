@@ -1,0 +1,27 @@
+---
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: kube2iam
+  namespace: kube-system
+  annotations:
+    flux.weave.works/automated: 'false'
+    flux.weave.works/tag.chart-image: semver:*
+spec:
+  releaseName: kube2iam
+  chart:
+    # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/kube2iam
+    repository: https://kubernetes-charts.storage.googleapis.com/
+    name: stable/kube2iam
+  values:
+    host:
+      iptables: true
+      interface: eni+
+    rbac:
+      create: true
+    tolerations:
+      - effect: NoSchedule
+        operator: Exists
+    extraArgs:
+      base-role-arn: arn:aws:iam::<account-id>:role/  # todo: replace account-id
+

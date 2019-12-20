@@ -1,62 +1,3 @@
-# ======================================
-# Autoscaler
-//resource "kubernetes_namespace" "cluster-autoscaler" {
-//  count = var.cluster_autoscaler_enabled ? 1 : 0
-//
-//  metadata {
-//    name = "cluster-autoscaler"
-//
-//    labels = {
-//      managed-by = "Terraform"
-//    }
-//  }
-//}
-
-//resource "helm_release" "cluster_autoscaler" {
-//  count      = var.cluster_autoscaler_enabled ? 1 : 0
-//  name       = "cluster-autoscaler"
-//  repository = "stable"
-//  chart      = "cluster-autoscaler"
-//  namespace  = "cluster-autoscaler"
-//
-//  values = [
-//    file("${path.module}/config/autoscaler.yaml"),
-//  ]
-//
-//  set {
-//    name = "image.tag"
-//    value = "v1.14.3"
-//  }
-//  set {
-//    name  = "podAnnotations.iam\\.amazonaws\\.com/role"
-//    value = "${var.cluster_id}-autoscaler"
-//  }
-//
-//  set {
-//    name  = "extraArgs.scale-down-unneeded-time"
-//    value = var.autoscaler-scale-down-unneeded-time
-//  }
-//
-//  set {
-//    name  = "autoDiscovery.clusterName"
-//    value = var.cluster_id
-//  }
-//
-//  set {
-//    name  = "awsRegion"
-//    value = var.aws_region
-//  }
-//
-//  # Uses kube2iam for credentials
-//  depends_on = [
-//    # helm_release.kube2iam,
-//    aws_iam_role.autoscaler,
-//    aws_iam_role_policy.autoscaler,
-//    kubernetes_namespace.cluster-autoscaler,
-//    # module.tiller,
-//  ]
-//}
-
 resource "aws_iam_role" "autoscaler" {
   count = var.cluster_autoscaler_enabled ? 1 : 0
   name  = "${module.odc_eks_cluster_label.id}-autoscaler"
@@ -113,4 +54,3 @@ resource "aws_iam_role_policy" "autoscaler_policy" {
 }
 EOF
 }
-
