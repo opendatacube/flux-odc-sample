@@ -25,6 +25,8 @@ spec:
     tolerations:
       - effect: NoSchedule
         operator: Exists
+
+#    Injected by Flux - using secrets
 #    extraArgs:
 #      base-role-arn: arn:aws:iam::012345678910:role/  # Replace the account number
 
