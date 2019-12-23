@@ -1,0 +1,2 @@
+extraArgs:
+  base-role-arn: arn:aws:iam::012345678910:role/   # Replace the account number

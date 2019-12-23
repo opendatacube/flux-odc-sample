@@ -11,8 +11,8 @@ spec:
   releaseName: alb-ingress
   chart:
     # Helm Charts: https://github.com/helm/charts/tree/master/incubator/aws-alb-ingress-controller/templates
-    repository: https://kubernetes-charts.storage.googleapis.com
-    name: incubator/aws-alb-ingress-controller
+    repository: https://kubernetes-charts-incubator.storage.googleapis.com/
+    name: aws-alb-ingress-controller
     version: 0.1.12
   values:
     autoDiscoverAwsRegion: true
