@@ -11,9 +11,7 @@ spec:
   releaseName: cluster-autoscaler
   chart:
     # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/cluster-autoscaler
-    repository:
-      url: https://kubernetes-charts.storage.googleapis.com
-      name: stable
+    repository: https://kubernetes-charts.storage.googleapis.com
     name: cluster-autoscaler
     version: 6.2.0
   values:
