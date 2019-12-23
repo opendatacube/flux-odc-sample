@@ -1,0 +1,22 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: alb-ingress
+  namespace: admin
+  annotations:
+    flux.weave.works/automated: "true"
+    flux.weave.works/tag.chart-image: semver:v1.1.4
+spec:
+  releaseName: alb-ingress
+  chart:
+    # Helm Charts: https://github.com/helm/charts/tree/master/incubator/aws-alb-ingress-controller/templates
+    repository: https://kubernetes-charts.storage.googleapis.com
+    name: incubator/aws-alb-ingress-controller
+    version: 0.1.12
+  values:
+    autoDiscoverAwsRegion: true
+    autoDiscoverAwsVpcID: true
+    clusterName: odc-test-stage-odc-eks
+    podAnnotations:
+      iam.amazonaws.com/role: odc-test-stage-odc-eks-alb

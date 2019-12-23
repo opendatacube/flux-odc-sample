@@ -7,7 +7,10 @@ module "odc_k8s_roles" {
   namespace = "odc-test"
   environment = "stage"
 
+  domain_name = "test.dea.ga.gov.au"
+
   cluster_autoscaler_enabled = true
+  alb_ingress_enabled        = true
 }
 
 module "odc_k8s_secrets" {
