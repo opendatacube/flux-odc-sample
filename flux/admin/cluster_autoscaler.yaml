@@ -6,7 +6,7 @@ metadata:
   namespace: admin
   annotations:
     flux.weave.works/automated: "true"
-    flux.weave.works/tag.chart-image: semver:*
+    flux.weave.works/tag.chart-image: semver:v1.14.3
 spec:
   releaseName: cluster-autoscaler
   chart:
@@ -15,8 +15,8 @@ spec:
     name: cluster-autoscaler
     version: 6.2.0
   values:
-#    image:
-#      tag: "v1.14.6"
+    image:
+      tag: "v1.14.3"
     cloudProvider: aws
     podAnnotations:
       iam.amazonaws.com/role: odc-test-stage-odc-eks-autoscaler
