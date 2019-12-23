@@ -23,10 +23,6 @@ spec:
     tolerations:
       - effect: NoSchedule
         operator: Exists
-  valuesFrom:
-    - configMapKeyRef:
-        # Name of the config map, must be in the same namespace as the HelmRelease
-        name: kube2iam-cm  # mandatory
-        # Key in the config map to get the values from
-        key: extraArgs.base-role-arn
+    extraArgs:
+      base-role-arn: arn:aws:iam::012345678910:role/  # Replace the account number
 
