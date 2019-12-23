@@ -1,12 +1,12 @@
 ---
-apiVersion: flux.weave.works/v1beta1
+apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
   name: cluster-autoscaler
   namespace: admin
   annotations:
-    flux.weave.works/automated: 'true'
-    flux.weave.works/tag.chart-image: glob:*
+    flux.weave.works/automated: "true"
+#    flux.weave.works/tag.chart-image: glob:*
 spec:
   releaseName: cluster-autoscaler
   chart:
