@@ -15,8 +15,8 @@ spec:
     name: cluster-autoscaler
     version: 6.2.0
   values:
-    image:
-      tag: "v1.14.3"
+#    image:
+#      tag: "v1.14.3"
     cloudProvider: aws
     podAnnotations:
       iam.amazonaws.com/role: odc-test-stage-odc-eks-autoscaler
