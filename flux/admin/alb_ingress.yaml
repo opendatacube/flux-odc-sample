@@ -5,8 +5,8 @@ metadata:
   name: alb-ingress
   namespace: admin
   annotations:
-    flux.weave.works/automated: "false"
-    flux.weave.works/tag.chart-image: semver:v1.1.4
+    fluxcd.io/automated: "false"
+#    filter.fluxcd.io/chart-image: semver:v1.1.4
 spec:
   releaseName: alb-ingress
   chart:
