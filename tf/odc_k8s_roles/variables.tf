@@ -5,22 +5,17 @@ variable "owner" {
 }
 
 variable "namespace" {
+  type        = string
   description = "Namespace for your deployment"
 }
 
 variable "environment" {
+  type        = string
   description = "Name of your environment e.g. dev, stage, prod"
 }
 
-variable "domain_name" {
-  description = "The domain name to be used by for applications deployed to the cluster and using ingress"
-  default = ""
-}
-
-variable "cluster_autoscaler_enabled" {
-  default = false
-}
-
-variable "alb_ingress_enabled" {
-  default = false
+variable "roles" {
+  type        = "list"
+  description = "list of roles that can be used by pods/applications on the k8s cluster"
+  default     = []
 }
