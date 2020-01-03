@@ -5,16 +5,20 @@ metadata:
   name: alb-ingress
   namespace: admin
   annotations:
-    fluxcd.io/automated: "false"
-#    filter.fluxcd.io/chart-image: semver:v1.1.4
+    fluxcd.io/automated: "true"
+    filter.fluxcd.io/chart-image: semver:v1.1.4
 spec:
   releaseName: alb-ingress
   chart:
-    # Helm Charts: https://github.com/helm/charts/tree/master/incubator/aws-alb-ingress-controller/templates
+    # Helm Charts: https://github.com/helm/charts/tree/master/incubator/aws-alb-ingress-controller
     repository: https://kubernetes-charts-incubator.storage.googleapis.com/
     name: aws-alb-ingress-controller
     version: 0.1.12
   values:
+    image:
+      repository: 894847497797.dkr.ecr.us-west-2.amazonaws.com/aws-alb-ingress-controller
+      tag: "v1.1.4"
+      pullPolicy: IfNotPresent
     autoDiscoverAwsRegion: true
     autoDiscoverAwsVpcID: true
     clusterName: odc-test-stage-odc-eks

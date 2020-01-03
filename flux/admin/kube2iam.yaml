@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   annotations:
     flux.weave.works/automated: "true"
-    flux.weave.works/tag.chart-image: semver:*
+    flux.weave.works/tag.chart-image: semver:0.10.8
 spec:
   releaseName: kube2iam
   chart:
@@ -17,6 +17,10 @@ spec:
   valueFileSecrets:
     - name: kube2iam
   values:
+    image:
+      repository: docker.io/jtblin/kube2iam
+      tag: 0.10.8
+      pullPolicy: IfNotPresent
     host:
       iptables: true
       interface: eni+

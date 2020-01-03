@@ -15,8 +15,10 @@ spec:
     name: cluster-autoscaler
     version: 6.2.0
   values:
-#    image:
-#      tag: "v1.14.3"
+    image:
+      repository: k8s.gcr.io/cluster-autoscaler
+      tag: v1.14.3
+      pullPolicy: IfNotPresent
     cloudProvider: aws
     podAnnotations:
       iam.amazonaws.com/role: odc-test-stage-odc-eks-autoscaler
