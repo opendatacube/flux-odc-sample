@@ -6,7 +6,7 @@ metadata:
   namespace: admin
   annotations:
     flux.weave.works/automated: "true"
-    flux.weave.works/tag.chart-image: semver:~1.14.*
+    flux.weave.works/tag.chart-image: semver:v1.14.6
 spec:
   releaseName: cluster-autoscaler
   chart:
@@ -17,7 +17,7 @@ spec:
   values:
     image:
       repository: k8s.gcr.io/cluster-autoscaler
-      tag: v1.14.3
+      tag: v1.14.6
       pullPolicy: IfNotPresent
     cloudProvider: aws
     podAnnotations:
