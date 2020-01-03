@@ -16,8 +16,8 @@ spec:
     version: 0.1.12
   values:
     image:
-      repository: 894847497797.dkr.ecr.us-west-2.amazonaws.com/aws-alb-ingress-controller
-      tag: "v1.1.4"
+      repository: docker.io/amazon/aws-alb-ingress-controller
+      tag: v1.1.4
       pullPolicy: IfNotPresent
     autoDiscoverAwsRegion: true
     autoDiscoverAwsVpcID: true
