@@ -5,8 +5,8 @@ metadata:
   name: kube2iam
   namespace: kube-system
   annotations:
-    flux.weave.works/automated: "true"
-    flux.weave.works/tag.chart-image: semver:0.10.8
+    fluxcd.io/automated: "true"
+    filter.fluxcd.io/chart-image: semver:0.10.8
 spec:
   releaseName: kube2iam
   chart:

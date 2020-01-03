@@ -5,8 +5,8 @@ metadata:
   name: cluster-autoscaler
   namespace: admin
   annotations:
-    flux.weave.works/automated: "true"
-    flux.weave.works/tag.chart-image: semver:v1.14.6
+    fluxcd.io/automated: "true"
+    filter.fluxcd.io/chart-image: semver:v1.14.6
 spec:
   releaseName: cluster-autoscaler
   chart:

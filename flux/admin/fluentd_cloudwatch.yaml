@@ -5,8 +5,8 @@ metadata:
   name: fluentd-cloudwatch
   namespace: admin
   annotations:
-    flux.weave.works/automated: "true"
-    flux.weave.works/tag.chart-image: semver:v1.7.3-debian-cloudwatch-1.0
+    fluxcd.io/automated: "true"
+    filter.fluxcd.io/chart-image: semver:v1.7.3-debian-cloudwatch-1.0
 spec:
   releaseName: fluentd-cloudwatch
   chart:
