@@ -3,7 +3,7 @@ apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
   name: kube2iam
-  namespace: kube-system
+  namespace: admin
   annotations:
     flux.weave.works/automated: "true"
     flux.weave.works/tag.chart-image: semver:0.10.8
