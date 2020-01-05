@@ -5,3 +5,4 @@ txtOwnerId: HOSTED_ZONE_IDENTIFIER # Replace
 domainFilters:
   - HOSTED_ZONE_NAME # Replace
 policy: sync
+registry: txt
