@@ -8,7 +8,7 @@ metadata:
     fluxcd.io/automated: "true"
     filter.fluxcd.io/chart-image: semver:0.5.17
 spec:
-  releaseName: cluster-autoscaler
+  releaseName: external-dns
   chart:
     # Helm Charts: https://github.com/helm/charts/tree/master/stable/external-dns
     repository: https://kubernetes-charts.storage.googleapis.com
