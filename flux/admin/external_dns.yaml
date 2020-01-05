@@ -1,0 +1,31 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: external-dns
+  namespace: admin
+  annotations:
+    fluxcd.io/automated: "false"
+    filter.fluxcd.io/chart-image: semver:0.5.17
+spec:
+  releaseName: cluster-autoscaler
+  chart:
+    # Helm Charts: https://github.com/helm/charts/tree/master/stable/external-dns
+    repository: https://kubernetes-charts.storage.googleapis.com
+    name: external-dns
+    version: 2.13.2
+  valueFileSecrets:
+    - name: external-dns
+  values:
+    image:
+      repository: bitnami/external-dns
+      tag: 0.5.17
+      pullPolicy: IfNotPresent
+    rbac:
+      create: true
+    podAnnotations:
+      iam.amazonaws.com/role: odc-test-stage-odc-eks-external-dns
+    sources:
+      - service
+      - ingress
+
