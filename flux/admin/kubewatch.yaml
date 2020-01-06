@@ -17,7 +17,7 @@ spec:
   values:
     image:
       repository: bitnami/kubewatch
-      tag: v0.0.4
+      tag: 0.0.4
       pullPolicy: IfNotPresent
     slack:
       enabled: false
