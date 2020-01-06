@@ -31,5 +31,5 @@ spec:
         cpu: 100m
         memory: 200Mi
     awsRole: odc-test-stage-odc-eks-fluentd
-    logGroupName: odc-test-stage-odc-eks-datakube
+    logGroupName: odc-test-stage-odc-eks-logs
     awsRegion: ap-southeast-2
