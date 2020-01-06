@@ -17,10 +17,10 @@ spec:
   values:
     image:
       repository: gcr.io/google_containers/metrics-server-amd64
-      tag: 0.3.6
+      tag: v0.3.6
       pullPolicy: IfNotPresent
     rbac:
       create: true
     args:
-      - --kubelet-preferred-address-types=InternalIP
-      - --logtostderr
+    - --kubelet-preferred-address-types=InternalIP
+    - --logtostderr
