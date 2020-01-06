@@ -1,0 +1,23 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: prometheus-operator
+  namespace: admin
+  annotations:
+    fluxcd.io/automated: "true"
+    filter.fluxcd.io/chart-image: semver:0.34.0
+spec:
+  releaseName: prometheus-operator
+  chart:
+    # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/kube2iam
+    repository: https://kubernetes-charts.storage.googleapis.com
+    name: prometheus-operator
+    version: 8.5.2
+  valueFileSecrets:
+    - name: prometheus-operator
+  values:
+    image:
+      repository: quay.io/prometheus/alertmanager
+      tag: 0.34.0
+      pullPolicy: IfNotPresent
