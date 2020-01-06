@@ -10,7 +10,7 @@ metadata:
 spec:
   releaseName: prometheus-operator
   chart:
-    # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/kube2iam
+    # Helm Charts: https://github.com/helm/charts/tree/master/stable/prometheus-operator
     repository: https://kubernetes-charts.storage.googleapis.com
     name: prometheus-operator
     version: 8.5.2
