@@ -32,5 +32,5 @@ spec:
 
 #    Injected by Flux - using secrets
 #    extraArgs:
-#      base-role-arn: arn:aws:iam::012345678910:role/  # Replace the account number
+#      base-role-arn: arn:aws:iam::${account_id}:role/  # Replace the account number
 

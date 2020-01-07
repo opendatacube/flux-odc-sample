@@ -1,3 +1,12 @@
+data "terraform_remote_state" "odc_eks-stage" {
+  backend = "s3"
+  config = {
+    bucket = "odc-test-stage-backend-tfstate"
+    key    = "odc_eks_terraform.tfstate"
+    region = "ap-southeast-2"
+  }
+}
+
 module "odc_k8s_roles" {
   # source = "github.com/opendatacube/datacube-k8s-eks//odc_eks?ref=terraform-aws-odc"
   source = "../../odc_k8s_roles"
@@ -218,13 +227,13 @@ module "odc_k8s_roles" {
   ]
 }
 
-//module "odc_k8s_secrets" {
-//  # source = "github.com/opendatacube/datacube-k8s-eks//odc_eks?ref=terraform-aws-odc"
-//  source = "../../odc_k8s_secrets"
-//
-//  region = "ap-southeast-2"
-//
-//  admin_secrets = {
-//    cluster_autoscaler_role = module.odc_k8s_roles.cluster_autoscaler_role
-//  }
-//}
+module "odc_k8s_secrets" {
+  # source = "github.com/opendatacube/datacube-k8s-eks//odc_eks?ref=terraform-aws-odc"
+  source = "../../odc_k8s_secrets"
+
+  region       = data.terraform_remote_state.odc_eks-stage.outputs.region
+  cluster_name = data.terraform_remote_state.odc_eks-stage.outputs.cluster_id
+
+  domain_name  = "test.dea.ga.gov.au"
+  certificate_arn = data.terraform_remote_state.odc_eks-stage.outputs.certificate_arn
+}

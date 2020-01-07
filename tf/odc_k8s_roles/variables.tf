@@ -15,7 +15,7 @@ variable "environment" {
 }
 
 variable "roles" {
-  type        = "list"
+  type        = list
   description = "list of roles that can be used by pods/applications on the k8s cluster"
   default     = []
 }

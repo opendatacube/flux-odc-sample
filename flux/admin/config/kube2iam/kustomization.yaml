@@ -1,7 +1,0 @@
-generatorOptions:
-  disableNameSuffixHash: true
-secretGenerator:
-- name: kube2iam
-  namespace: kube-system
-  files:
-  - values.yaml

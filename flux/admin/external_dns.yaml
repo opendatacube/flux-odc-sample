@@ -23,9 +23,10 @@ spec:
       pullPolicy: IfNotPresent
     rbac:
       create: true
-    podAnnotations:
-      iam.amazonaws.com/role: odc-test-stage-odc-eks-external-dns
     sources:
       - service
       - ingress
 
+#    Injected by Flux - using secrets
+#    podAnnotations:
+#      iam.amazonaws.com/role: ${cluster_name}-external-dns
