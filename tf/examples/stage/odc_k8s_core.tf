@@ -164,7 +164,7 @@ module "odc_k8s_roles" {
       EOF
     },
     {
-      name   = "external-dns",
+      name   = "external-dns"
       policy = <<-EOF
       {
         "Version": "2012-10-17",
@@ -193,7 +193,7 @@ module "odc_k8s_roles" {
       EOF
     },
     {
-      name   = "fluentd",
+      name   = "fluentd"
       policy = <<-EOF
       {
         "Version": "2012-10-17",
