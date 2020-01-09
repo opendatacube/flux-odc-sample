@@ -1,7 +1,0 @@
-generatorOptions:
-  disableNameSuffixHash: true
-secretGenerator:
-- name: external-dns
-  namespace: admin
-  files:
-  - values.yaml
