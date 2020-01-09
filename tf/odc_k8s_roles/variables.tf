@@ -1,6 +1,3 @@
-variable "region" {
-}
-
 variable "owner" {
 }
 
