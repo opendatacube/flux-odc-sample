@@ -5,8 +5,8 @@ metadata:
   name: fluentd-cloudwatch
   namespace: admin
   annotations:
-    fluxcd.io/ignore: true
-    fluxcd.io/automated: "true"
+    fluxcd.io/ignore: false
+    fluxcd.io/automated: true
     filter.fluxcd.io/chart-image: semver:v1.7.3-debian-cloudwatch-1.0
 spec:
   releaseName: fluentd-cloudwatch
