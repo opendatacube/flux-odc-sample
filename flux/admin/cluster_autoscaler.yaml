@@ -1,0 +1,39 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: cluster-autoscaler
+  namespace: admin
+  annotations:
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: true  # automated deployment of new container images
+    filter.fluxcd.io/chart-image: semver:v1.14.6
+spec:
+  releaseName: cluster-autoscaler
+  chart:
+    # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/cluster-autoscaler
+    repository: https://kubernetes-charts.storage.googleapis.com
+    name: cluster-autoscaler
+    version: 6.2.0
+  valueFileSecrets:
+    - name: cluster-autoscaler
+  values:
+    image:
+      repository: k8s.gcr.io/cluster-autoscaler
+      tag: v1.14.6
+      pullPolicy: IfNotPresent
+    rbac:
+      create: true
+    sslCertPath: /etc/kubernetes/pki/ca.crt
+    extraArgs:
+      scale-down-unneeded-time: "10m"
+      balance-similar-node-groups: true
+      skip-nodes-with-system-pods: false
+
+#    Injected by Flux - using secrets
+#    podAnnotations:
+#      iam.amazonaws.com/role: ${cluster_name}-autoscaler
+#    autoDiscovery:
+#      clusterName: ${cluster_name}
+#    cloudProvider: aws
+#    awsRegion: ${region}
