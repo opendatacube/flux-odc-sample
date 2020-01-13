@@ -5,7 +5,8 @@ metadata:
   name: kube2iam
   namespace: kube-system
   annotations:
-    fluxcd.io/automated: "true"
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: true  # automated deployment of new container images
     filter.fluxcd.io/chart-image: semver:0.10.8
 spec:
   releaseName: kube2iam
@@ -32,5 +33,5 @@ spec:
 
 #    Injected by Flux - using secrets
 #    extraArgs:
-#      base-role-arn: arn:aws:iam::012345678910:role/  # Replace the account number
+#      base-role-arn: arn:aws:iam::${account_id}:role/  # Replace the account number
 

@@ -5,7 +5,8 @@ metadata:
   name: alb-ingress
   namespace: admin
   annotations:
-    fluxcd.io/automated: "true"
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: true  # automated deployment of new container images
     filter.fluxcd.io/chart-image: semver:v1.1.4
 spec:
   releaseName: alb-ingress
@@ -14,13 +15,17 @@ spec:
     repository: https://kubernetes-charts-incubator.storage.googleapis.com/
     name: aws-alb-ingress-controller
     version: 0.1.12
+  valueFileSecrets:
+    - name: alb-ingress
   values:
     image:
-      repository: docker.io/amazon/aws-alb-ingress-controller
+      repository: amazon/aws-alb-ingress-controller
       tag: v1.1.4
       pullPolicy: IfNotPresent
     autoDiscoverAwsRegion: true
     autoDiscoverAwsVpcID: true
-    clusterName: odc-test-stage-odc-eks
-    podAnnotations:
-      iam.amazonaws.com/role: odc-test-stage-odc-eks-alb-ingress
+
+#    Injected by Flux - using secrets
+#    clusterName: ${cluster_name}
+#    podAnnotations:
+#      iam.amazonaws.com/role: ${cluster_name}-alb-ingress

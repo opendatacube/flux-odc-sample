@@ -5,7 +5,8 @@ metadata:
   name: fluentd-cloudwatch
   namespace: admin
   annotations:
-    fluxcd.io/automated: "true"
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: true  # automated deployment of new container images
     filter.fluxcd.io/chart-image: semver:v1.7.3-debian-cloudwatch-1.0
 spec:
   releaseName: fluentd-cloudwatch
@@ -14,6 +15,8 @@ spec:
     repository: https://kubernetes-charts-incubator.storage.googleapis.com
     name: fluentd-cloudwatch
     version: 0.12.1
+  valueFileSecrets:
+    - name: fluentd-cloudwatch
   values:
     image:
       repository: fluent/fluentd-kubernetes-daemonset
@@ -30,6 +33,8 @@ spec:
       requests:
         cpu: 100m
         memory: 200Mi
-    awsRole: odc-test-stage-odc-eks-fluentd
-    logGroupName: odc-test-stage-odc-eks-logs
-    awsRegion: ap-southeast-2
+
+#    Injected by Flux - using secrets
+#    awsRole: ${cluster_name}-fluentd
+#    logGroupName: ${cluster_name}-logs
+#    awsRegion: ${region}
