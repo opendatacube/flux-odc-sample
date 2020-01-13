@@ -5,7 +5,8 @@ metadata:
   name: kubewatch
   namespace: admin
   annotations:
-    fluxcd.io/automated: "true"
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: true  # automated deployment of new container images
     filter.fluxcd.io/chart-image: semver:0.0.4
 spec:
   releaseName: kubewatch
