@@ -1,12 +1,14 @@
-apiVersion: flux.weave.works/v1beta1
+---
+apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
   name: hub
   namespace: sandbox
   annotations:
-    flux.weave.works/automated: "true"
-    flux.weave.works/tag.scheduler: semver:*
-    flux.weave.works/tag.worker: semver:*
+    fluxcd.io/ignore: true   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: true  # automated deployment of new container images
+    fluxcd.io/tag.scheduler: semver:*
+    fluxcd.io/tag.worker: semver:*
 spec:
   releaseName: hub
   chart:
@@ -16,7 +18,7 @@ spec:
     name: jupyterhub
     version: 0.8.2
   valueFileSecrets:
-  - name: "jhub"
+  - name: jhub
   values:
     hub:
       #cookieSecret - Injected by Flux
@@ -27,8 +29,6 @@ spec:
       annotations:
         iam.amazonaws.com/role: dev-eks-datacube-wms
       extraConfig:
-        # You can customise the user environments using a spawner, here we give different users access to different environments
-        # based on their cognito roles
         spawner: |
           #!/usr/bin/env python3
 
@@ -110,6 +110,14 @@ spec:
                   },
                   {
                     'default': False,
+                    'display_name': 'AU_DEV_KKODC: Unstable Development environment',
+                    'description': 'Limited user, 2 Cores, 16G Memory Read access to database and files',
+                    'kubespawner_override': {
+                      'image': 'kkodc/sandbox:latest'
+                    }
+                  },
+                  {
+                    'default': False,
                     'display_name': 'AU_DEV: Development environment',
                     'description': 'Jupyterhub environment with 4 Cores, 20G Memory Read access to database and files',
                     'kubespawner_override': {
@@ -180,12 +188,11 @@ spec:
 
           # load extra env variable to pod using secrets
           c.KubeSpawner.modify_pod_hook = modify_pod_hook
-
-      extraEnv:
-        OAUTH_CALLBACK_URL: {url}
-        OAUTH2_AUTHORIZE_URL: {authz_url}
-        OAUTH2_TOKEN_URL: {token_url}
-        OAUTH2_USERDATA_URL: {userinfo_url}
+#      extraEnv:
+#        OAUTH_CALLBACK_URL: ${url}
+#        OAUTH2_AUTHORIZE_URL: ${auth_url}
+#        OAUTH2_TOKEN_URL: ${token_url}
+#        OAUTH2_USERDATA_URL: ${userinfo_url}
     auth:
       type: custom
       custom:
@@ -202,8 +209,8 @@ spec:
         enabled: false
         minAvailable: 0
     singleuser:
-      extraAnnotations:
-        iam.amazonaws.com/role: dev-eks-datacube-wms
+#      extraAnnotations:
+#        iam.amazonaws.com/role: ${cluster_name}-wms
       defaultUrl: "/lab"
       memory:
         limit: 16G
@@ -237,11 +244,10 @@ spec:
             - "bash"
             - "-c"
             - |-
-              mkdir -p /tmp/dea-sample-notebooks || True
-              git clone https://github.com/GeoscienceAustralia/dea-notebooks.git /tmp/dea-sample-notebooks
-              chown 1000:100 /tmp/dea-sample-notebooks/DEA_sandbox/ -R
-              rsync -avu /tmp/dea-sample-notebooks/DEA_sandbox/ ~/
-              rm -rf /tmp/dea-sample-notebooks
+              git clone --depth 1 https://github.com/GeoscienceAustralia/dea-notebooks.git dea-notebooks
+              chown 1000:100 dea-notebooks/DEA_sandbox/ -R
+              rsync -avu dea-notebooks/DEA_sandbox/ ~/
+              rm -rf dea-notebooks
     ingress:
       enabled: true
       annotations:
@@ -251,9 +257,8 @@ spec:
         alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
         alb.ingress.kubernetes.io/scheme: internet-facing
         alb.ingress.kubernetes.io/target-type: instance
-        alb.ingress.kubernetes.io/waf-acl-id: {waf_id}
         kubernetes.io/ingress.class: alb
-        alb.ingress.kubernetes.io/certificate-arn: {cert_arn}
-      hosts:
-      - sandbox.opendatacube.com
+#        alb.ingress.kubernetes.io/certificate-arn: ${cert_arn}
+#      hosts:
+#        - app.${domain_name}
       pathSuffix: "*"
