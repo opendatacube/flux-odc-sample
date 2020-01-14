@@ -248,17 +248,17 @@ spec:
               chown 1000:100 dea-notebooks/DEA_sandbox/ -R
               rsync -avu dea-notebooks/DEA_sandbox/ ~/
               rm -rf dea-notebooks
-    ingress:
-      enabled: true
-      annotations:
-        kubernetes.io/tls-acme: "true"
-        alb.ingress.kubernetes.io/healthcheck-path: /hub/login
-        alb.ingress.kubernetes.io/healthcheck-port: traffic-port
-        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-        alb.ingress.kubernetes.io/scheme: internet-facing
-        alb.ingress.kubernetes.io/target-type: instance
-        kubernetes.io/ingress.class: alb
+#    ingress:
+#      enabled: true
+#      annotations:
+#        kubernetes.io/tls-acme: "true"
+#        kubernetes.io/ingress.class: alb
+#        alb.ingress.kubernetes.io/healthcheck-path: /hub/login
+#        alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+#        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+#        alb.ingress.kubernetes.io/scheme: internet-facing
+#        alb.ingress.kubernetes.io/target-type: instance
 #        alb.ingress.kubernetes.io/certificate-arn: ${cert_arn}
 #      hosts:
 #        - app.${domain_name}
-      pathSuffix: "*"
+#      pathSuffix: "*"

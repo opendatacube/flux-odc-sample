@@ -5,7 +5,7 @@ metadata:
   name: dask
   namespace: sandbox
   annotations:
-    fluxcd.io/ignore: true   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
     fluxcd.io/automated: true  # automated deployment of new container images
     fluxcd.io/tag.scheduler: semver:*
     fluxcd.io/tag.worker: semver:*
@@ -48,30 +48,30 @@ spec:
         requests:
           memory: 16G
           cpu: "0.5"
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                - key: nodetype
-                  operator: In
-                  values:
-                    - spot
+#      affinity:
+#        nodeAffinity:
+#          requiredDuringSchedulingIgnoredDuringExecution:
+#            nodeSelectorTerms:
+#              - matchExpressions:
+#                - key: nodetype
+#                  operator: In
+#                  values:
+#                    - spot
     database:
       database: ows
       host: database.local
       existingSecret: db
-    ingress:
-      enabled: true
-      annotations:
-        kubernetes.io/tls-acme: "true"
-        alb.ingress.kubernetes.io/healthcheck-port: traffic-port
-        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-        alb.ingress.kubernetes.io/scheme: internet-facing
-        alb.ingress.kubernetes.io/target-type: ip
-        kubernetes.io/ingress.class: alb
+#    ingress:
+#      enabled: true
+#      annotations:
+#        kubernetes.io/tls-acme: "true"
+#        alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+#        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+#        alb.ingress.kubernetes.io/scheme: internet-facing
+#        alb.ingress.kubernetes.io/target-type: ip
+#        kubernetes.io/ingress.class: alb
 #        alb.ingress.kubernetes.io/security-groups: "${cluster_name}-lb"
 #        alb.ingress.kubernetes.io/certificate-arn: ${certificate_arn}
 #      hosts:
 #        - dask.${domain_name}
-      path: /*
+#      path: /*
