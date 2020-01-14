@@ -1,0 +1,86 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: efs-provisioner
+  namespace: kube-system
+  annotations:
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "true"
+spec:
+  releaseName: efs-provisioner
+  chart:
+    # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/efs-provisioner
+    repository: https://kubernetes-charts.storage.googleapis.com
+    name: efs-provisioner
+    version: 0.8.0
+  valueFileSecrets:
+  - name: efs-provisioner
+  values:
+    ## Containers
+    ##
+    replicaCount: 1
+    revisionHistoryLimit: 10
+    image:
+      repository: quay.io/external_storage/efs-provisioner
+      tag: v2.4.0
+      pullPolicy: IfNotPresent
+
+    busyboxImage:
+      repository: gcr.io/google_containers/busybox
+      tag: 1.27
+      pullPolicy: IfNotPresent
+
+    ## Deployment annotations
+    ##
+    annotations: {}
+
+    ## Configure provisioner
+    ## https://github.com/kubernetes-incubator/external-storage/tree/master/aws/efs#deployment
+    ##
+    efsProvisioner:
+      provisionerName: example.com/aws-efs
+      storageClass:
+        name: efs
+        isDefault: false
+        gidAllocate:
+          enabled: true
+          gidMin: 40000
+          gidMax: 50000
+        reclaimPolicy: Delete
+        mountOptions: []
+          # - acregmin=3
+          # - acregmax=60
+
+    ## Enable RBAC
+    ## Leave serviceAccountName blank for the default name
+    ##
+    rbac:
+      create: true
+      serviceAccountName: ""
+
+    ## Annotations to be added to deployment
+    ##
+
+    ## Node labels for pod assignment
+    ##
+    nodeSelector: {}
+
+    # Affinity for pod assignment
+    # Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+    affinity: {}
+
+    # Tolerations for node tains
+    tolerations: {}
+
+    ## Configure resources
+    ##
+    resources: {}
+      # To specify resources, uncomment the following lines, adjust them as necessary,
+      # and remove the curly braces after 'resources:'.
+      # limits:
+      #  cpu: 200m
+      #  memory: 128Mi
+      # requests:
+      #  cpu: 100m
+      #  memory: 128Mi
