@@ -75,3 +75,51 @@ spec:
 #      hosts:
 #        - dask.${domain_name}
       path: /*
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dask-datacube-dask
+  namespace: sandbox
+  annotations:
+    flux.weave.works/antecedent: labs:helmrelease/dask
+  kubernetes.yaml: |
+    kubernetes:
+      count:
+        max: 4
+        min: 2
+        start: 2
+      env: {}
+      host: 0.0.0.0
+      name: dask-{uuid}
+      namespace: null
+      port: 8786
+      worker-template:
+        kind: Pod
+        metadata:
+          annotations:
+            iam.amazonaws.com/role: kubernetes-wms
+          labels:
+            app: dask
+        spec:
+          containers:
+          - args:
+            - dask-worker
+            - --nthreads
+            - "2"
+            - --no-bokeh
+            - --memory-limit
+            - 6GB
+            - --death-timeout
+            - "60"
+            image: opendatacube/dask:latest
+            name: dask
+            resources:
+              limits:
+                cpu: "2"
+                memory: 6G
+              requests:
+                cpu: "2"
+                memory: 6G
+          restartPolicy: Never
+      worker-template-path: null
