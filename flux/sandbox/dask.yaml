@@ -1,14 +1,13 @@
 ---
-apiVersion: helm.fluxcd.io/v1
+apiVersion: flux.weave.works/v1beta1
 kind: HelmRelease
 metadata:
   name: dask
   namespace: sandbox
   annotations:
-    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
-    fluxcd.io/automated: true  # automated deployment of new container images
-    fluxcd.io/tag.scheduler: semver:*
-    fluxcd.io/tag.worker: semver:*
+    flux.weave.works/automated: "true"
+    flux.weave.works/tag.scheduler: semver:*
+    flux.weave.works/tag.worker: semver:*
 spec:
   releaseName: dask
   chart:
@@ -70,7 +69,7 @@ spec:
         alb.ingress.kubernetes.io/scheme: internet-facing
         alb.ingress.kubernetes.io/target-type: ip
         kubernetes.io/ingress.class: alb
-        alb.ingress.kubernetes.io/security-groups: "${cluster_name}-lb"
+#        alb.ingress.kubernetes.io/security-groups: "${cluster_name}-lb"
 #        alb.ingress.kubernetes.io/certificate-arn: ${certificate_arn}
 #      hosts:
 #        - dask.${domain_name}
