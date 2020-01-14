@@ -5,7 +5,7 @@ metadata:
   name: hub
   namespace: sandbox
   annotations:
-    fluxcd.io/ignore: true   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
     fluxcd.io/automated: true  # automated deployment of new container images
     fluxcd.io/tag.scheduler: semver:*
     fluxcd.io/tag.worker: semver:*
@@ -26,8 +26,8 @@ spec:
       pdb:
         enabled: false
         minAvailable: 0
-      annotations:
-        iam.amazonaws.com/role: dev-eks-datacube-wms
+#      annotations:
+#        iam.amazonaws.com/role: ${cluster_name}-wms
       extraConfig:
         spawner: |
           #!/usr/bin/env python3
