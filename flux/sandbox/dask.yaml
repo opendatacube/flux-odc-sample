@@ -5,7 +5,7 @@ metadata:
   name: dask
   namespace: sandbox
   annotations:
-    fluxcd.io/ignore: true   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
     fluxcd.io/automated: true  # automated deployment of new container images
     fluxcd.io/tag.scheduler: semver:*
     fluxcd.io/tag.worker: semver:*
