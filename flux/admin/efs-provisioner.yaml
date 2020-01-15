@@ -5,7 +5,7 @@ metadata:
   name: efs-provisioner
   namespace: kube-system
   annotations:
-    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/ignore: "true"   # temporarily make Flux ignore a manifest if set to true
     fluxcd.io/automated: "true"
 spec:
   releaseName: efs-provisioner
