@@ -208,6 +208,27 @@ spec:
       pdb:
         enabled: false
         minAvailable: 0
+    scheduling:
+      userScheduler:
+        enabled: true
+      podPriority:
+        enabled: true
+      userPlaceholder:
+        enabled: false
+        replicas: 1
+#      userPods:
+#        nodeAffinity:
+#          requiredDuringSchedulingIgnoredDuringExecution:
+#            nodeSelectorTerms:
+#              - matchExpressions:
+#                - key: nodetype
+#                  operator: In
+#                  values:
+#                    - ondemand
+#                - key: nodegroup
+#                  operator: In
+#                  values:
+#                    - ${cluster_name}-jhub
     singleuser:
 #      extraAnnotations:
 #        iam.amazonaws.com/role: ${cluster_name}-wms
