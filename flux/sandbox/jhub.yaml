@@ -26,6 +26,7 @@ spec:
       pdb:
         enabled: false
         minAvailable: 0
+#      Injected by Flux - using secrets
 #      annotations:
 #        iam.amazonaws.com/role: ${cluster_name}-wms
       extraConfig:
@@ -110,14 +111,6 @@ spec:
                   },
                   {
                     'default': False,
-                    'display_name': 'AU_DEV_KKODC: Unstable Development environment',
-                    'description': 'Limited user, 2 Cores, 16G Memory Read access to database and files',
-                    'kubespawner_override': {
-                      'image': 'kkodc/sandbox:latest'
-                    }
-                  },
-                  {
-                    'default': False,
                     'display_name': 'AU_DEV: Development environment',
                     'description': 'Jupyterhub environment with 4 Cores, 20G Memory Read access to database and files',
                     'kubespawner_override': {
@@ -188,6 +181,7 @@ spec:
 
           # load extra env variable to pod using secrets
           c.KubeSpawner.modify_pod_hook = modify_pod_hook
+#      Injected by Flux - using secrets
 #      extraEnv:
 #        OAUTH_CALLBACK_URL: ${url}
 #        OAUTH2_AUTHORIZE_URL: ${auth_url}
@@ -216,6 +210,7 @@ spec:
       userPlaceholder:
         enabled: false
         replicas: 1
+#      Injected by Flux - using secrets
 #      userPods:
 #        nodeAffinity:
 #          requiredDuringSchedulingIgnoredDuringExecution:
@@ -269,6 +264,7 @@ spec:
               chown 1000:100 dea-notebooks/DEA_sandbox/ -R
               rsync -avu dea-notebooks/DEA_sandbox/ ~/
               rm -rf dea-notebooks
+#    Injected by Flux - using secrets
 #    ingress:
 #      enabled: true
 #      annotations:
