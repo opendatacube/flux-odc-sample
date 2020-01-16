@@ -5,7 +5,7 @@ metadata:
   name: hub
   namespace: sandbox
   annotations:
-    fluxcd.io/ignore: true   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
     fluxcd.io/automated: true  # automated deployment of new container images
     fluxcd.io/tag.scheduler: semver:*
     fluxcd.io/tag.worker: semver:*
@@ -54,7 +54,6 @@ spec:
 
           async def custom_options_form(self):
             self.log.info("logged in user: %s", self.user.name)
-            os.environ['PROFILE_TYPE'] = 'default-profile'
             # setup default profile_list for all users
             default_profile_list = [
               {
@@ -78,6 +77,7 @@ spec:
               user_details = ""
               access_token = ""
               auth_state = await self.user.get_auth_state()
+              self.log.info("auth_state: %s", json.dumps(auth_state, indent=4))
               if auth_state and "oauth_user" in auth_state:
                 user_details = auth_state["oauth_user"]
               if auth_state and "access_token" in auth_state:
@@ -98,7 +98,6 @@ spec:
               # Use logic here to decide how to configure user profile_list if belongs to user-group
               if cognito_user_groups.DEVELOPMENT in user_group_info:
                 # configure your profile_list for 'dev-group' user
-                os.environ['PROFILE_TYPE'] = 'dev-profile'
                 self.log.info("user belongs to {} cognito group".format(cognito_user_groups.DEVELOPMENT))
                 dev_profile_list = [
                   {
@@ -138,34 +137,6 @@ spec:
               # Let KubeSpawner inspect profile_list and decide what to return
               return self._options_form_default()
 
-          def modify_pod_hook(spawner, pod):
-            # load extra env varibles for dev-profile
-            if 'PROFILE_TYPE' in os.environ and os.environ['PROFILE_TYPE'] == 'dev-profile':
-              pod.spec.containers[0].env.extend([
-                client.V1EnvVar(
-                  name='AWS_ACCESS_KEY_ID',
-                  value_from=client.V1EnvVarSource(secret_key_ref=client.V1SecretKeySelector(
-                    name='hub-jhub-accesskey',
-                    key='AWS_ACCESS_KEY_ID',
-                  ))
-                ),
-                client.V1EnvVar(
-                  name='AWS_SECRET_ACCESS_KEY',
-                  value_from=client.V1EnvVarSource(secret_key_ref=client.V1SecretKeySelector(
-                    name='hub-jhub-accesskey',
-                    key='AWS_SECRET_ACCESS_KEY',
-                  ))
-                ),
-                client.V1EnvVar(
-                  name='AWS_DEFAULT_REGION',
-                  value_from=client.V1EnvVarSource(secret_key_ref=client.V1SecretKeySelector(
-                    name='hub-jhub-accesskey',
-                    key='AWS_DEFAULT_REGION',
-                  ))
-                )
-              ])
-            return pod
-
           # Set the log level by value or name.
           c.JupyterHub.log_level = 'DEBUG'
 
@@ -178,9 +149,6 @@ spec:
 
           # Override options_form
           c.KubeSpawner.options_form = custom_options_form
-
-          # load extra env variable to pod using secrets
-          c.KubeSpawner.modify_pod_hook = modify_pod_hook
 #      Injected by Flux - using secrets
 #      extraEnv:
 #        OAUTH_CALLBACK_URL: ${url}
