@@ -77,7 +77,7 @@ spec:
               user_details = ""
               access_token = ""
               auth_state = await self.user.get_auth_state()
-              self.log.info("auth_state: %s", json.dumps(auth_state, indent=4))
+              # self.log.info("auth_state: %s", json.dumps(auth_state, indent=4))
               if auth_state and "oauth_user" in auth_state:
                 user_details = auth_state["oauth_user"]
               if auth_state and "access_token" in auth_state:
