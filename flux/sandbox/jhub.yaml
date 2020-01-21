@@ -28,7 +28,7 @@ spec:
         minAvailable: 0
 #      Injected by Flux - using secrets
 #      annotations:
-#        iam.amazonaws.com/role: ${cluster_name}-wms
+#        iam.amazonaws.com/role: ${role_name}
       extraConfig:
         spawner: |
           #!/usr/bin/env python3
@@ -187,14 +187,10 @@ spec:
 #                - key: nodetype
 #                  operator: In
 #                  values:
-#                    - ondemand
-#                - key: nodegroup
-#                  operator: In
-#                  values:
-#                    - ${cluster_name}-jhub
+#                    - ${node_type}
     singleuser:
 #      extraAnnotations:
-#        iam.amazonaws.com/role: ${cluster_name}-wms
+#        iam.amazonaws.com/role: ${role_name}
       defaultUrl: "/lab"
       memory:
         limit: 16G
