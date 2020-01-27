@@ -151,22 +151,27 @@ spec:
           c.KubeSpawner.options_form = custom_options_form
 #      Injected by Flux - using secrets
 #      extraEnv:
-#        OAUTH_CALLBACK_URL: ${url}
-#        OAUTH2_AUTHORIZE_URL: ${auth_url}
-#        OAUTH2_TOKEN_URL: ${token_url}
-#        OAUTH2_USERDATA_URL: ${userinfo_url}
+#        JUPYTERHUB_USERPOOL_ID: ${jhub_userpool_id}
+#        AWS_DEFAULT_REGION: ${region}
+#        OAUTH_CALLBACK_URL: ${jhub_userpool_callback_url}
+#        OAUTH2_AUTHORIZE_URL: ${jhub_userpool_auth_url}
+#        OAUTH2_TOKEN_URL: ${jhub_userpool_token_url}
+#        OAUTH2_USERDATA_URL: ${jhub_userpool_userinfo_url}
     auth:
       type: custom
       custom:
         className: oauthenticator.generic.GenericOAuthenticator
         config:
           login_service: "email"
+#          Injected by Flux - using secrets
+#          client_id: ${jhub_auth_client_id}
+#          client_secret: ${jhub_auth_client_secret}
     proxy:
       #secretToken - Injected by Flux
       nginx:
         image:
           name: quay.io/kubernetes-ingress-controller/nginx-ingress-controller
-          tag: 0.21.0
+          tag: 0.27.0
       pdb:
         enabled: false
         minAvailable: 0
@@ -177,17 +182,14 @@ spec:
         enabled: true
       userPlaceholder:
         enabled: false
-        replicas: 1
-#      Injected by Flux - using secrets
-#      userPods:
-#        nodeAffinity:
-#          requiredDuringSchedulingIgnoredDuringExecution:
-#            nodeSelectorTerms:
-#              - matchExpressions:
-#                - key: nodetype
-#                  operator: In
-#                  values:
-#                    - ${node_type}
+        replicas: 2
+      userPods:
+        nodeAffinity:
+          matchNodePurpose: require
+    cull:
+      enabled: true
+      timeout: 3600
+      every: 500
     singleuser:
 #      extraAnnotations:
 #        iam.amazonaws.com/role: ${role_name}
