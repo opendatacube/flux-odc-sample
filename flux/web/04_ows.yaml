@@ -1,13 +1,13 @@
----
-apiVersion: flux.weave.works/v1beta1
+apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
   name: ows
   namespace: web
   annotations:
-    flux.weave.works/tag.global: glob:*
-    flux.weave.works/tag.wmsConfig: glob:*
-    flux.weave.works/automated: 'true'
+    fluxcd.io/ignore: true   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: true  # automated deployment of new container images
+    fluxcd.io/tag.global: glob:*
+    fluxcd.io/tag.wmsConfig: glob:*
 spec:
   releaseName: ows
   chart:
