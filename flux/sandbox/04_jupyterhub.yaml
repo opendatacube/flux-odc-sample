@@ -17,27 +17,29 @@ allowVolumeExpansion: true
 apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
-  name: hub
+  name: jupyterhub
   namespace: sandbox
   annotations:
     fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
-    fluxcd.io/automated: true  # automated deployment of new container images
-    fluxcd.io/tag.scheduler: semver:*
-    fluxcd.io/tag.worker: semver:*
+    fluxcd.io/automated: false  # automation is not working. turn on if it's fixed
 spec:
-  releaseName: hub
+  releaseName: jupyterhub
   chart:
     # Helm Charts: https://github.com/jupyterhub/helm-chart
     # Source Repository: https://github.com/jupyterhub/jupyterhub
+    # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/0.9.0-beta.3/jupyterhub/values.yaml
     repository: https://jupyterhub.github.io/helm-chart/
     name: jupyterhub
-    version: 0.8.2
+    version: 0.9.0-beta.3   # Use Development Release: https://jupyterhub.github.io/helm-chart/#development-releases-jupyterhub
   valueFileSecrets:
-    - name: jhub
+  - name: jupyterhub
   values:
     hub:
       #cookieSecret - Injected by Flux
-      imagePullPolicy: Always
+      # imagePullPolicy: Always
+      image:
+        name: jupyterhub/k8s-hub
+        tag: '0.9.0-beta.3'
       pdb:
         enabled: false
         minAvailable: 0
@@ -52,8 +54,12 @@ spec:
           import os
           import sys
           import base64
+          import time
+          import requests
+          from jupyterhub.handlers import LogoutHandler
+          from tornado import web
           from kubernetes import client, config
-          # install 'cognitojwt' packages to hub container - require to validate user claim.
+          # install 'cognitojwt' packages to hub container - require to validate user claim
           try:
             import cognitojwt
           except ImportError:
@@ -67,8 +73,28 @@ spec:
           def enum(**enums):
             return type('Enum', (), enums)
 
+          async def verify_claims(self, user):
+            # Retrieve user authentication info, decode, and verify claims
+            try:
+              auth_state = await user.get_auth_state()
+              # self.log.info("auth_state: {}".format(auth_state))
+              if auth_state is None:
+                raise ValueError("auth_state is empty")
+
+              verified_claims = cognitojwt.decode(
+                auth_state['access_token'],
+                os.getenv('AWS_DEFAULT_REGION', 'ap-southeast-2'),
+                os.getenv('JUPYTERHUB_USERPOOL_ID'),
+                testmode=False  # Enable token expiration check
+              )
+              return verified_claims
+            except cognitojwt.CognitoJWTException as err:
+              self.log.error("Cliam verification issue: {}".format(err))
+              raise web.HTTPError(401, "Session is expired!")
+
           async def custom_options_form(self):
             self.log.info("logged in user: %s", self.user.name)
+            os.environ['PROFILE_TYPE'] = 'default-profile'
             # setup default profile_list for all users
             default_profile_list = [
               {
@@ -88,69 +114,51 @@ spec:
             )
 
             try:
-              # setup user_details and user_details
-              user_details = ""
-              access_token = ""
-              auth_state = await self.user.get_auth_state()
-              # self.log.info("auth_state: %s", json.dumps(auth_state, indent=4))
-              if auth_state and "oauth_user" in auth_state:
-                user_details = auth_state["oauth_user"]
-              if auth_state and "access_token" in auth_state:
-                access_token = auth_state["access_token"]
-              # self.log.info("user[acces_token]: {}".format(access_token))
+              # Read user access token to collect user group info
+              verified_claims = await verify_claims(self, self.user)
+              user_group_info = verified_claims.get('cognito:groups', [])
+              self.log.info("%s user belongs to group(s): %s", self.user.name, (','.join(user_group_info)))
 
-              verified_claims = cognitojwt.decode(
-                access_token,
-                os.getenv('AWS_DEFAULT_REGION', 'ap-southeast-2'),
-                os.getenv('JUPYTERHUB_USERPOOL_ID'),
-                testmode=False  # Enable token expiration check
-              )
-              user_group_info = []
-              if verified_claims and "cognito:groups" in verified_claims:
-                user_group_info = verified_claims["cognito:groups"]
-              self.log.info("%s user group info: %s", self.user.name, (','.join(user_group_info)))
-
-              # Use logic here to decide how to configure user profile_list if belongs to user-group
+              # Use logic here to decide how to configure user profile_list based on user-group
               if cognito_user_groups.DEVELOPMENT in user_group_info:
                 # configure your profile_list for 'dev-group' user
-                self.log.info("user belongs to {} cognito group".format(cognito_user_groups.DEVELOPMENT))
+                os.environ['PROFILE_TYPE'] = 'dev-profile'
                 dev_profile_list = [
                   {
                     'default': False,
-                    'display_name': 'AU_DEV_SUDO: Standard environment with root user access',
-                    'description': 'Root user, 2 Cores, 16G Memory Read access to database and files',
+                    'display_name': 'Dev Environment: [latest]',
+                    'description': 'Unstable image based off https://github.com/GeoscienceAustralia/dea-sandbox master branch',
                     'kubespawner_override': {
-                      'image': 'opendatacube/jupyterhub:0.2.11-unstable.8.g6c146b9_sudo'
+                      'image': 'geoscienceaustralia/sandbox:latest',
+                      'image_pull_policy': 'Always'
                     }
                   },
                   {
                     'default': False,
-                    'display_name': 'AU_DEV: Development environment',
-                    'description': 'Jupyterhub environment with 4 Cores, 20G Memory Read access to database and files',
+                    'display_name': 'Dev Environment: [sudo-latest]',
+                    'description': 'Unstable image based off https://github.com/GeoscienceAustralia/dea-sandbox master branch with sudo',
                     'kubespawner_override': {
-                      'mem_guarantee': '20G',
-                      'mem_limit': '20G',
-                      'cpu_guarantee': 4,
-                      'cpu_limit': 4,
-                    },
-                  },
+                      'image': 'geoscienceaustralia/sandbox:sudo-latest',
+                      'image_pull_policy': 'Always'
+                    }
+                  }
                 ]
+                # profile_list = default_profile_list + dev_profile_list
                 self.profile_list.extend(dev_profile_list)
               if cognito_user_groups.INTERNAL in user_group_info:
                 # configure your profile_list for 'internal-group' user
+                os.environ['PROFILE_TYPE'] = 'internal-profile'
                 self.log.info("user belongs to {} cognito group".format(cognito_user_groups.INTERNAL))
               if cognito_user_groups.TRUSTED in user_group_info:
                 # configure your profile_list for 'trusted-group' user
+                os.environ['PROFILE_TYPE'] = 'trusted-profile'
                 self.log.info("user belongs to {} cognito group".format(cognito_user_groups.TRUSTED))
-            except TypeError as err:
-              self.log.error("Type error: {}".format(err))
-            except cognitojwt.CognitoJWTException as err:
-              self.log.error("Cliam verification issue: {}".format(err))
-            except Exception as err:
-              self.log.error("Unexpected error: {}".format(err))
-            finally:
-              # Let KubeSpawner inspect profile_list and decide what to return
+
+              # Return options_form - Let KubeSpawner inspect profile_list and decide what to return
               return self._options_form_default()
+            except (TypeError, IndexError, ValueError, KeyError) as err:
+              self.log.error("Syntaxt error: {}".format(err))
+              raise web.HTTPError(400, "Something went wrong. Coud not load profiles")
 
           # Set the log level by value or name.
           c.JupyterHub.log_level = 'DEBUG'
@@ -162,25 +170,36 @@ spec:
           c.LocalProcessSpawner.debug = True
           c.Spawner.cmd = ['jupyter-labhub']
 
+          # Override spawner timeout - in seconds
+          c.KubeSpawner.start_timeout = 600
+
           # Override options_form
           c.KubeSpawner.options_form = custom_options_form
+
 #      Injected by Flux - using secrets
 #      extraEnv:
 #        JUPYTERHUB_USERPOOL_ID: ${jhub_userpool_id}
 #        AWS_DEFAULT_REGION: ${region}
-#        OAUTH_CALLBACK_URL: ${jhub_userpool_callback_url}
-#        OAUTH2_AUTHORIZE_URL: ${jhub_userpool_auth_url}
-#        OAUTH2_TOKEN_URL: ${jhub_userpool_token_url}
-#        OAUTH2_USERDATA_URL: ${jhub_userpool_userinfo_url}
-    auth:
-      type: custom
-      custom:
-        className: oauthenticator.generic.GenericOAuthenticator
-        config:
-          login_service: "email"
-#          Injected by Flux - using secrets
+#        AWSCOGNITO_DOMAIN: ${jhub_userpool_domain}.auth.${region}.amazoncognito.com
+#        OAUTH2_AUTHORIZE_URL: https://${jhub_userpool_domain}.auth.${region}.amazoncognito.com/oauth2/authorize
+#        OAUTH2_TOKEN_URL: https://${jhub_userpool_domain}.auth.${region}.amazoncognito.com/oauth2/token
+#    Injected by Flux - using secrets
+#    auth:
+#      type: custom
+#      state:
+#        enabled: True
+#        cryptoKey: 356e9462b05e983c6ffcced3702b9b78c5859a22fd6c9380513701ed8e075184 # Replace
+#      custom:
+#        className: oauthenticator.awscognito.AWSCognitoAuthenticator
+#        config:
+#          login_service: "email"
 #          client_id: ${jhub_auth_client_id}
 #          client_secret: ${jhub_auth_client_secret}
+#          token_url: https://${jhub_userpool_domain}.auth.${region}.amazoncognito.com/oauth2/token
+#          userdata_url: https://${jhub_userpool_domain}.auth.${region}.amazoncognito.com/oauth2/userInfo
+#          oauth_callback_url: https://${sandbox_host_name}/oauth_callback
+#          oauth_logout_redirect_url: https://${sandbox_host_name}
+
     proxy:
       #secretToken - Injected by Flux
       nginx:
@@ -190,21 +209,22 @@ spec:
       pdb:
         enabled: false
         minAvailable: 0
+
     scheduling:
       userScheduler:
         enabled: true
       podPriority:
         enabled: true
       userPlaceholder:
-        enabled: false
-        replicas: 2
+        enabled: true
+        replicas: 1
       userPods:
         nodeAffinity:
           matchNodePurpose: require
     cull:
       enabled: true
       timeout: 3600
-      every: 500
+      every: 300
     singleuser:
 #      extraAnnotations:
 #        iam.amazonaws.com/role: ${role_name}
@@ -216,10 +236,10 @@ spec:
       cloudMetadata:
         enabled: true
       image:
-        # Docker Hub: https://hub.docker.com/r/opendatacube/jupyterhub
-        # Source Repository: https://github.com/opendatacube/jupyterhub
-        name: opendatacube/jupyterhub
-        tag: 0.2.13-unstable.1.gac2700f
+        # Docker Hub: https://hub.docker.com/r/geoscienceaustralia/sandbox
+        # Source Repository: https://github.com/geoscienceaustralia/dea-sandbox
+        name: geoscienceaustralia/sandbox
+        tag: "0.0.5"
       extraEnv:
         DB_PORT: "5432"
         #DB_PASSWORD - Injected by Flux
@@ -227,27 +247,20 @@ spec:
         #DB_DATABASE - Injected by Flux
         #DB_HOSTNAME - Injected by Flux
         DATACUBE_CONFIG_PATH: "/conf/datacube.conf"
-      storage:
-        storageClass: jhub-standard-gp2
-        extraVolumes:
-          - name: notebooks
-            emptyDir: {}
-        extraVolumeMounts:
-          - name: notebooks
-            mountPath: /notebooks
-      lifecycleHooks:
-        postStart:
-          exec:
-            command:
-              - "bash"
-              - "-c"
-              - |-
-                git clone --depth 1 https://github.com/GeoscienceAustralia/dea-notebooks.git dea-notebooks
-                rm -rf dea-notebooks/.github
-                rm -rf dea-notebooks/Scientific_workflows
-                rsync -avu dea-notebooks/ ~/
-                rm -rf dea-notebooks
-                rm LICENSE README.rst README.md |:
+    storage:
+      storageClass: jhub-standard-gp2
+      extraVolumes:
+        - name: notebooks
+          emptyDir: {}
+        - name: jupyter-notebook-config
+          configMap:
+            name: jupyter-notebook-config
+      extraVolumeMounts:
+        - name: notebooks
+          mountPath: /notebooks
+        - name: jupyter-notebook-config
+          mountPath: /etc/jupyter/jupyter_notebook_config.py
+          subPath: jupyter_notebook_config.py
 #    Injected by Flux - using secrets
 #    ingress:
 #      enabled: true
@@ -260,6 +273,7 @@ spec:
 #        alb.ingress.kubernetes.io/scheme: internet-facing
 #        alb.ingress.kubernetes.io/target-type: instance
 #        alb.ingress.kubernetes.io/certificate-arn: ${cert_arn}
+#        alb.ingress.kubernetes.io/waf-acl-id: ${waf_acl_id}
 #      hosts:
 #        - ${sandbox_host_name}
 #      pathSuffix: "*"
