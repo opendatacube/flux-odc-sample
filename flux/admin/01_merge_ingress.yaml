@@ -1,0 +1,16 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: merge-ingress
+  namespace: admin
+  annotations:
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: true  # automated deployment of new container images
+spec:
+  releaseName: merge-ingress
+  chart:
+    # Helm Charts: https://github.com/komljen/helm-charts/tree/master/merge-ingress
+    repository: "https://raw.githubusercontent.com/komljen/helm-charts/master/charts/"
+    name: "merge-ingress"
+    version: "0.2"
