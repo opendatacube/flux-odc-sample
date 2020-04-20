@@ -1,0 +1,18 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: web
+  name: ingress-ssl-redirect
+  annotations:
+    kubernetes.io/ingress.class: merge
+    merge.ingress.kubernetes.io/config: merged-ingress
+    merge.ingress.kubernetes.io/priority: "9999"
+spec:
+  rules:
+    - http:
+        paths:
+         - path: /*
+           backend:
+             serviceName: ssl-redirect
+             servicePort: use-annotation

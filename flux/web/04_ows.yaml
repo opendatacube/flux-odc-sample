@@ -1,10 +1,11 @@
+---
 apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
   name: ows
   namespace: web
   annotations:
-    fluxcd.io/ignore: true   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
     fluxcd.io/automated: true  # automated deployment of new container images
     fluxcd.io/tag.global: glob:*
     fluxcd.io/tag.wmsConfig: glob:*
@@ -14,85 +15,98 @@ spec:
     # Helm Charts: https://github.com/opendatacube/datacube-charts/tree/master/stable/datacube
     repository: https://opendatacube.github.io/datacube-charts/charts/
     name: datacube
-    version: 0.17.9
+    version: 0.17.10
+  valueFileSecrets:
+    - name: ows
   values:
     image:
       # Docker Hub: https://hub.docker.com/r/opendatacube/wms
       # Source Repository: https://github.com/opendatacube/datacube-ows
       registry: docker.io
-      tag: "0.10.0"
-      repository: opendatacube/wms
+      tag: "0.13.2"
+      repository: opendatacube/ows
       pullPolicy: IfNotPresent
-    database:
-      database: ows
-      host: database.local
-      existingSecret: ows
+#    Injected by Flux - using secrets
+#    database:
+#      database: ${db_name}
+#      host: ${db_hostname}
+#      existingSecret: ${db_secret}
     clusterInfo:
       envName: dev
-    minReplicas: 120
-    maxReplicas: 200
+    minReplicas: 20
+    maxReplicas: 50
     wms:
+#      Injected by Flux - using secrets
+#      annotations:
+#        iam.amazonaws.com/role: ${role_name}
       dockerArgs:
-      - "gunicorn"
-      - "-b"
-      - "0.0.0.0:8000"
-      - "-w"
-      - "3"
-      - "--threads=2"
-      - "-k"
-      - "gevent"
-      - "--timeout"
-      - "121"
-      - "--pid"
-      - "gunicorn.pid"
-      - "--log-level"
-      - "info"
-      - "--worker-tmp-dir"
-      - "/dev/shm"
-      - "datacube_wms.wsgi"
+        - "gunicorn"
+        - "-b"
+        - "0.0.0.0:8000"
+        - "-w"
+        - "3"
+        - "--threads=3"
+        - "-k"
+        - "gevent"
+        - "--timeout"
+        - "121"
+        - "--graceful-timeout"
+        - "121"
+        - "--keep-alive"
+        - "5"
+        - "--pid"
+        - "gunicorn.pid"
+        - "--backlog"
+        - "64"
+        - "--log-level"
+        - "info"
+        - "--worker-tmp-dir"
+        - "/dev/shm"
+        - "datacube_ows.wsgi"
       enabled: true
       externalPort: 80
       internalPort: 8000
       targetCpu: 250
       resources:
         requests:
-          cpu: "130m"
-          memory: 1024Mi
+          cpu: "250m"
+          memory: 4096Mi
         limits:
-          memory: 1024Mi
+          cpu: 4
+          memory: 8192Mi
       maxSurge: 25%
       maxUnavailable: 10%
-      annotations:
-        iam.amazonaws.com/role: dev-eks-datacube-eks-wms
       readinessProbe:
         exec:
           command:
-          - "/bin/sh"
-          - "-c"
-          - "curl --silent 'http://localhost:8000/ping'"
+            - "/bin/sh"
+            - "-c"
+            - "curl --silent 'http://localhost:8000/ping'"
+        periodSeconds: 30
+        initialDelaySeconds: 10
+        timeoutSeconds: 5
       livenessProbe:
         exec:
           command:
-          - "/bin/sh"
-          - "-c"
-          - "curl --silent 'http://localhost:8000/ping'"
+            - "/bin/sh"
+            - "-c"
+            - "curl --silent 'http://localhost:8000/ping'"
         periodSeconds: 30
-      awsCredentialsSecret: owsaccesskey
+        initialDelaySeconds: 10
+        timeoutSeconds: 5
+#      Injected by Flux - using secrets
+#      awsCredentialsSecret: ows-user-creds
       additionalEnvironmentVars:
         GDAL_DISABLE_READDIR_ON_OPEN: "EMPTY_DIR"
         CPL_VSIL_CURL_ALLOWED_EXTENSIONS: ".tif"
         GDAL_HTTP_MAX_RETRY: 10
         GDAL_HTTP_RETRY_DELAY: 1
-      #   OPENCENSUS_TRACING_ENABLED: true
-      #   OPENCENSUS_SAMPLE_RATE: 20
-      #   JAEGER_HOSTNAME: "jaeger-agent.opencensus"
-      #   JAEGER_PORT: 6831
-      #   JAEGER_ENDPOINT: /api/traces
-      #   JAEGER_SERVICE_NAME: "ows_ogc"
+        DATACUBE_OWS_CFG: config.ows_cfg.ows_cfg
     wmsConfig:
       # if using docker or configmap
-      path: /opt/config/wms
-      filename: wms_cfg.py
+      path: /opt/config
+      filename: ows_cfg.py
+      subPath: config
       # configMap: cfg_map_name
       # url: cfg_url
       image:
@@ -100,37 +114,29 @@ spec:
         # Source Repository: https://github.com/GeoscienceAustralia/dea-config
         registry: docker.io
         repository: geoscienceaustralia/dea-datakube-config
-        tag: "1.3.24-unstable.10.g4fa6747"
+        tag: "1.4.10-unstable.5.g266d1d0"
         pullPolicy: IfNotPresent
-        src: /opt/dea-config/dev/services/wms/ows/wms_cfg.py
+        src: /opt/dea-config/dev/services/wms/ows/ows_cfg.py
     ingress:
       enabled: true
-      hosts:
-      - ows.opendatacube.com
+#      Injected by Flux - using secrets
+#      hosts:
+#      - ows.${domain_name}
       annotations:
         kubernetes.io/ingress.class: merge
         merge.ingress.kubernetes.io/config: merged-ingress
-        merge.ingress.kubernetes.io/priority: "9"
+        merge.ingress.kubernetes.io/priority: "0"
     service:
       annotations:
         alb.ingress.kubernetes.io/healthcheck-path: "/ping"
-        kubernetes.io/ingress.class: alb
-        alb.ingress.kubernetes.io/scheme: internet-facing
-        alb.ingress.kubernetes.io/success-codes: 200,400
-        alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
-        alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "15"
-        alb.ingress.kubernetes.io/target-type: ip
-        alb.ingress.kubernetes.io/certificate-arn: {your cert arn here}
-        alb.ingress.kubernetes.io/connection-idle-timeout: 180
-        alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=120
-        alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
-        alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_302"}}'
+        alb.ingress.kubernetes.io/healthcheck-interval-seconds: "60"
+        alb.ingress.kubernetes.io/target-group-attributes: "load_balancing.algorithm.type=least_outstanding_requests"
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
-          - matchExpressions:
-            - key: nodetype
-              operator: NotIn
-              values:
-              - spot
+            - matchExpressions:
+                - key: nodetype
+                  operator: NotIn
+                  values:
+                    - spot
