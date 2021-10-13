@@ -2,31 +2,26 @@
 apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
-  name: external-dns
+  name: alb-controller
   namespace: admin
   annotations:
     fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
     fluxcd.io/automated: "false"  # automated deployment of new container images
 spec:
-  releaseName: external-dns
+  releaseName: alb-controller
   helmVersion: v3
   chart:
-    # Helm Charts: https://github.com/bitnami/charts/tree/master/bitnami/external-dns
-    repository: https://charts.bitnami.com/bitnami
-    name: external-dns
-    version: 4.4.3
+    # Helm Charts: https://github.com/aws/eks-charts/tree/master/stable/aws-load-balancer-controller
+    repository: https://aws.github.io/eks-charts
+    name: aws-load-balancer-controller
+    version: 1.1.0
   valueFileSecrets:
-    - name: external-dns
+    - name: alb-controller
   values:
     image:
-      repository: bitnami/external-dns
-      tag: 0.7.5
+      repository: amazon/aws-load-balancer-controller
+      tag: v2.1.0
       pullPolicy: IfNotPresent
-    rbac:
-      create: true
-    sources:
-      - service
-      - ingress
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -42,16 +37,10 @@ spec:
                     - eks
 
 #    Injected by Flux - using secrets
+#    clusterName: ${cluster_name}
+#    rbac:
+#      create: true
 #    serviceAccount:
 #      create: true
 #      annotations:
 #        eks.amazonaws.com/role-arn: "${service_account_arn}"
-#    provider: aws
-#    aws:
-#      zoneType: public
-#    txtOwnerId: ${hosted_zone_id}
-#    txtPrefix: "${cluster_name}-"
-#    domainFilters:
-#      - ${domain_name}
-#    policy: sync
-#    registry: txt

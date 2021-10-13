@@ -5,20 +5,20 @@ metadata:
   name: kubewatch
   namespace: admin
   annotations:
-    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
-    fluxcd.io/automated: true  # automated deployment of new container images
-    filter.fluxcd.io/chart-image: semver:0.0.4
+    fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "false"  # automated deployment of new container images
 spec:
   releaseName: kubewatch
+  helmVersion: v3
   chart:
     # Helm Charts: https://github.com/helm/charts/tree/master/stable/kubewatch
-    repository: https://kubernetes-charts.storage.googleapis.com
+    repository: https://charts.bitnami.com/bitnami
     name: kubewatch
-    version: 1.0.1
+    version: 3.0.0
   values:
     image:
       repository: bitnami/kubewatch
-      tag: 0.0.4
+      tag: 0.1.0
       pullPolicy: IfNotPresent
     slack:
       enabled: false
@@ -41,3 +41,16 @@ spec:
       replicationcontroller: true
       replicaset: true
       services: true
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodetype
+                  operator: In
+                  values:
+                    - ondemand
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - eks
