@@ -1,0 +1,135 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: ows
+  namespace: web
+  annotations:
+    fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "true"  # automated deployment of new container images
+    fluxcd.io/tag.chart-image: semver:*
+    fluxcd.io/tag.owsConfig: semver:*
+    fluxcd.io/tag.ows: semver:*
+spec:
+  releaseName: ows
+  helmVersion: v3
+  chart:
+    # Helm Charts: https://github.com/opendatacube/datacube-charts/tree/master/stable/datacube-ows
+    repository: https://opendatacube.github.io/datacube-charts/charts/
+    name: datacube-ows
+    version: 0.18.14
+  valueFileSecrets:
+  - name: ows
+  values:
+#    Injected by Flux - using secrets
+#    database:
+#      database: ${db_name}
+#      host: ${db_hostname}
+#      existingSecret: ${db_secret}
+    clusterInfo:
+      envName: prod
+    minReplicas: 20
+    maxReplicas: 50
+    ows:
+      image:
+        # Docker Hub: https://hub.docker.com/r/opendatacube/ows
+        # Source Repository: https://github.com/opendatacube/datacube-ows
+        tag: "1.8.20"
+        repository: opendatacube/ows
+        pullPolicy: IfNotPresent
+      dockerArgs:
+      - "gunicorn"
+      - "-b"
+      - "0.0.0.0:8000"
+      - "-w"
+      - "3"
+      - "--threads=2"
+      - "-k"
+      - "gevent"
+      - "--timeout"
+      - "121"
+      - "--keep-alive"
+      - "5"
+      - "--pid"
+      - "gunicorn.pid"
+      - "--log-level"
+      - "info"
+      - "--worker-tmp-dir"
+      - "/dev/shm"
+      - "--config"
+      - "python:datacube_ows.gunicorn_config"
+      - "datacube_ows.wsgi"
+      enabled: true
+      externalPort: 80
+      internalPort: 8000
+      targetCpu: 250
+      resources:
+        requests:
+          cpu: 1
+          memory: 1024Mi
+        limits:
+          cpu: 2
+          memory: 4096Mi
+      maxSurge: 25%
+      maxUnavailable: 10%
+      startupProbe: # only available in version 1.18
+        httpGet:
+          path: /?time=2021-01-07&srs=EPSG%3A3857&transparent=true&format=image%2Fpng&exceptions=application%2Fvnd.ogc.se_xml&styles=&tiled=true&feature_count=101&service=WMS&version=1.1.1&request=GetMap&layers=s2_l2a&bbox=3566245.9916731827%2C1315328.3827313147%2C3566857.4878994636%2C1315939.8789575957&width=256&height=256
+          port: 8000
+        failureThreshold: 30
+        periodSeconds: 10
+      readinessProbe:
+        httpGet:
+          path: /?time=2021-01-07&srs=EPSG%3A3857&transparent=true&format=image%2Fpng&exceptions=application%2Fvnd.ogc.se_xml&styles=&tiled=true&feature_count=101&service=WMS&version=1.1.1&request=GetMap&layers=s2_l2a&bbox=3566245.9916731827%2C1315328.3827313147%2C3566857.4878994636%2C1315939.8789575957&width=256&height=256
+          port: 8000
+        periodSeconds: 30
+        initialDelaySeconds: 10
+        timeoutSeconds: 5
+        successThreshold: 1
+        failureThreshold: 18
+      livenessProbe:
+        httpGet:
+          path: /?time=2021-01-07&srs=EPSG%3A3857&transparent=true&format=image%2Fpng&exceptions=application%2Fvnd.ogc.se_xml&styles=&tiled=true&feature_count=101&service=WMS&version=1.1.1&request=GetMap&layers=s2_l2a&bbox=3566245.9916731827%2C1315328.3827313147%2C3566857.4878994636%2C1315939.8789575957&width=256&height=256
+          port: 8000
+        periodSeconds: 30
+        initialDelaySeconds: 10
+        timeoutSeconds: 5
+        successThreshold: 1
+        failureThreshold: 18
+      additionalEnvironmentVars:
+        WMS_CONFIG_PATH: /env/config/ows_refactored/ows_root_cfg.py
+        DATACUBE_OWS_CFG: "ows_refactored.ows_root_cfg.ows_cfg"
+        AWS_DEFAULT_REGION: ap-southeast-2
+        AWS_NO_SIGN_REQUEST: "YES"
+        prometheus_multiproc_dir: "/dev/shm"  # for prometheus scraper
+        PYTHONPATH: "/env/config"
+    owsConfig:
+      # if using docker or configmap
+      path: /env/config
+      # filename: ows_cfg.py
+      # subPath: config
+      # configMap: cfg_map_name
+      # url: cfg_url
+      image:
+        # Docker Hub: https://hub.docker.com/r/geoscienceaustralia/dea-datakube-config
+        # Source Repository: https://github.com/GeoscienceAustralia/dea-config
+        registry: docker.io
+        repository: geoscienceaustralia/dea-datakube-config
+        tag: "1.5.14"
+        pullPolicy: IfNotPresent
+        # src: /opt/dea-config/prod/services/wms/ows/ows_cfg.py
+        cfg_folder: /opt/dea-config/prod/services/wms/ows_refactored
+    ingress:
+      enabled: true
+#      Injected by Flux - using secrets
+#      hosts:
+#      - ows.${domain_name}
+      annotations:
+        kubernetes.io/ingress.class: merge
+        merge.ingress.kubernetes.io/config: merged-ingress-external
+        merge.ingress.kubernetes.io/priority: "0"
+    service:
+      annotations:
+        alb.ingress.kubernetes.io/healthcheck-path: "/ping"
+        alb.ingress.kubernetes.io/healthcheck-interval-seconds: "60"
+        alb.ingress.kubernetes.io/target-group-attributes: "load_balancing.algorithm.type=least_outstanding_requests"

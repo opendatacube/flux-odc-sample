@@ -15,8 +15,3 @@ spec:
     repository: https://raw.githubusercontent.com/komljen/helm-charts/master/charts/
     name: merge-ingress
     version: "0.2"
-  values:
-    image:
-      repository: jakubkulhan/ingress-merge
-      tag: latest
-      pullPolicy: IfNotPresent
