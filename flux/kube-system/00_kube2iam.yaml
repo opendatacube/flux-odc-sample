@@ -1,0 +1,36 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: kube2iam
+  namespace: kube-system
+  annotations:
+    fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "false"  # automated deployment of new container images
+spec:
+  releaseName: kube2iam
+  helmVersion: v3
+  chart:
+    # Helm Charts: https://github.com/jtblin/kube2iam/tree/master/charts/kube2iam
+    repository: https://jtblin.github.io/kube2iam/
+    name: kube2iam
+    version: 2.5.2
+  valueFileSecrets:
+  - name: kube2iam
+  values:
+    image:
+      repository: jtblin/kube2iam
+      tag: 0.10.9
+      pullPolicy: IfNotPresent
+    host:
+      iptables: true
+      interface: eni+
+    rbac:
+      create: true
+    tolerations:
+    - effect: NoSchedule
+      operator: Exists
+
+#    Injected by Flux - using secrets
+#    extraArgs:
+#      base-role-arn: arn:aws:iam::${account_id}:role/  # Replace the account number
