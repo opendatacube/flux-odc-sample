@@ -76,7 +76,7 @@ spec:
         httpGet:
           path: /?time=2021-01-07&srs=EPSG%3A3857&transparent=true&format=image%2Fpng&exceptions=application%2Fvnd.ogc.se_xml&styles=&tiled=true&feature_count=101&service=WMS&version=1.1.1&request=GetMap&layers=s2_l2a&bbox=3566245.9916731827%2C1315328.3827313147%2C3566857.4878994636%2C1315939.8789575957&width=256&height=256
           port: 8000
-        failureThreshold: 30
+        failureThreshold: 5
         periodSeconds: 10
       readinessProbe:
         httpGet:
@@ -86,7 +86,7 @@ spec:
         initialDelaySeconds: 10
         timeoutSeconds: 5
         successThreshold: 1
-        failureThreshold: 18
+        failureThreshold: 5
       livenessProbe:
         httpGet:
           path: /?time=2021-01-07&srs=EPSG%3A3857&transparent=true&format=image%2Fpng&exceptions=application%2Fvnd.ogc.se_xml&styles=&tiled=true&feature_count=101&service=WMS&version=1.1.1&request=GetMap&layers=s2_l2a&bbox=3566245.9916731827%2C1315328.3827313147%2C3566857.4878994636%2C1315939.8789575957&width=256&height=256
@@ -95,7 +95,7 @@ spec:
         initialDelaySeconds: 10
         timeoutSeconds: 5
         successThreshold: 1
-        failureThreshold: 18
+        failureThreshold: 5
       additionalEnvironmentVars:
         WMS_CONFIG_PATH: /env/config/ows_refactored/ows_root_cfg.py
         DATACUBE_OWS_CFG: "ows_refactored.ows_root_cfg.ows_cfg"
