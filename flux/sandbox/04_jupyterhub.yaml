@@ -1,0 +1,251 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: jupyterhub
+  namespace: sandbox
+  annotations:
+    fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "false"  # automated deployment of new container images
+spec:
+  releaseName: jupyterhub
+  helmVersion: v3
+  chart:
+    # Helm Charts: https://github.com/jupyterhub/zero-to-jupyterhub-k8s/tree/main/jupyterhub
+    # Source Repository: https://github.com/jupyterhub/jupyterhub
+    repository: https://jupyterhub.github.io/helm-chart/
+    name: jupyterhub
+    version: 1.1.3
+  valueFileSecrets:
+  - name: jupyterhub
+  values:
+    hub:
+      #cookieSecret - Injected by Flux
+      image:
+        name: jupyterhub/k8s-hub
+        tag: 1.1.3
+      pdb:
+        enabled: false
+        minAvailable: 1
+      # Injected by Flux - Authentication and extraEnv
+      networkPolicy:
+        enabled: false
+      config:
+        KubeSpawner:
+          delete_pvc: false
+      extraConfig:
+        spawner: |
+
+          import json
+          import os
+          import sys
+          import base64
+          import time
+          import requests
+          from jupyterhub.handlers import LogoutHandler
+          from tornado import web
+          from kubernetes import client, config
+          # install 'cognitojwt' packages to hub container - require to validate user claim
+          try:
+            import cognitojwt
+          except ImportError:
+            import subprocess
+            subprocess.call([sys.executable, "-m", "pip", "install", "wheel"])
+            subprocess.call([sys.executable, "-m", "pip", "install", "--user", "cognitojwt[sync]"])
+          finally:
+            sys.path.append(os.path.expanduser('~') + "/.local/lib/python3.6/site-packages")
+            import cognitojwt
+          def enum(**enums):
+            return type('Enum', (), enums)
+          async def verify_claims(self, user):
+            # Retrieve user authentication info, decode, and verify claims
+            try:
+              auth_state = await user.get_auth_state()
+              # self.log.info("auth_state: {}".format(auth_state))
+              if auth_state is None:
+                raise ValueError("auth_state is empty")
+              verified_claims = cognitojwt.decode(
+                auth_state['access_token'],
+                os.getenv('AWS_DEFAULT_REGION', 'ap-southeast-2'),
+                os.getenv('JUPYTERHUB_USERPOOL_ID'),
+                testmode=False  # Enable token expiration check
+              )
+              return verified_claims
+            except cognitojwt.CognitoJWTException as err:
+              self.log.error("Cliam verification issue: {}".format(err))
+              raise web.HTTPError(401, "Session is expired!")
+          async def custom_options_form(self):
+            self.log.info("logged in user: %s", self.user.name)
+            os.environ['PROFILE_TYPE'] = 'default-profile'
+            # setup default profile_list for all users
+            default_profile_list = [
+              {
+                'default': True,
+                'display_name': 'AU: Standard environment',
+                'description': 'Limited user, 2 Cores, 16G Memory Read access to database and files',
+              },
+            ]
+            self.profile_list = default_profile_list
+            cognito_user_groups = enum(
+              DEVELOPMENT='dev-group',
+              INTERNAL='internal-group',
+              TRUSTED='trusted-group',
+              DEFAULT='default-group',
+              NONE='None'
+            )
+            try:
+              # Read user access token to collect user group info
+              verified_claims = await verify_claims(self, self.user)
+              user_group_info = verified_claims.get('cognito:groups', [])
+              self.log.info("%s user belongs to group(s): %s", self.user.name, (','.join(user_group_info)))
+              # Use logic here to decide how to configure user profile_list based on user-group
+              if cognito_user_groups.DEVELOPMENT in user_group_info:
+                # configure your profile_list for 'dev-group' user
+                os.environ['PROFILE_TYPE'] = 'dev-profile'
+                dev_profile_list = [
+                  {
+                    'default': False,
+                    'display_name': 'Dev Environment: [latest]',
+                    'description': 'Unstable image based off https://github.com/GeoscienceAustralia/dea-sandbox master branch',
+                    'kubespawner_override': {
+                      'image': 'geoscienceaustralia/sandbox:latest',
+                      'image_pull_policy': 'Always'
+                    }
+                  },
+                  {
+                    'default': False,
+                    'display_name': 'Dev Environment: [sudo-latest]',
+                    'description': 'Unstable image based off https://github.com/GeoscienceAustralia/dea-sandbox master branch with sudo',
+                    'kubespawner_override': {
+                      'image': 'geoscienceaustralia/sandbox:sudo-latest',
+                      'image_pull_policy': 'Always'
+                    }
+                  }
+                ]
+                # profile_list = default_profile_list + dev_profile_list
+                self.profile_list.extend(dev_profile_list)
+              if cognito_user_groups.INTERNAL in user_group_info:
+                # configure your profile_list for 'internal-group' user
+                os.environ['PROFILE_TYPE'] = 'internal-profile'
+                self.log.info("user belongs to {} cognito group".format(cognito_user_groups.INTERNAL))
+              if cognito_user_groups.TRUSTED in user_group_info:
+                # configure your profile_list for 'trusted-group' user
+                os.environ['PROFILE_TYPE'] = 'trusted-profile'
+                self.log.info("user belongs to {} cognito group".format(cognito_user_groups.TRUSTED))
+              # Return options_form - Let KubeSpawner inspect profile_list and decide what to return
+              return self._options_form_default()
+            except (TypeError, IndexError, ValueError, KeyError) as err:
+              self.log.error("Syntaxt error: {}".format(err))
+              raise web.HTTPError(400, "Something went wrong. Coud not load profiles")
+
+          # Set the log level by value or name.
+          c.JupyterHub.log_level = 'DEBUG'
+
+          # Enable debug-logging of the single-user server
+          c.Spawner.debug = True
+
+          # Enable debug-logging of the single-user server
+          c.LocalProcessSpawner.debug = True
+          c.Spawner.cmd = ['jupyter-labhub']
+
+          # Override spawner timeout - in seconds
+          c.KubeSpawner.start_timeout = 600
+
+          # Override options_form
+          c.KubeSpawner.options_form = custom_options_form
+
+    proxy:
+      #secretToken - Injected by Flux
+      chp:
+        image:
+          name: jupyterhub/configurable-http-proxy
+          tag: 4.5.0
+        networkPolicy:
+          enabled: false
+        pdb:
+          enabled: false
+          minAvailable: 1
+      traefik:
+        image:
+          name: traefik
+          tag: v2.4.11
+        networkPolicy:
+          enabled: false
+        pdb:
+          enabled: false
+          minAvailable: 1
+      service:
+        type: NodePort
+      https:
+        enabled: true
+        type: offload
+
+    ingress:
+      enabled: true
+      pathSuffix: "*"
+#      Injected by Flux - using secrets
+#      hosts:
+#      - sandbox.${domain_name}
+      annotations:
+        kubernetes.io/ingress.class: merge
+        merge.ingress.kubernetes.io/config: merged-ingress-sandbox
+        merge.ingress.kubernetes.io/priority: "0"
+
+    scheduling:
+      userScheduler:
+        enabled: true
+      podPriority:
+        enabled: true
+      userPlaceholder:
+        enabled: false
+      corePods:
+        nodeAffinity:
+          matchNodePurpose: require
+      userPods:
+        nodeAffinity:
+          matchNodePurpose: require
+
+    # delete user pods that are not active
+    cull:
+      enabled: true
+      timeout: 10800   # 3 hours - max-idle-seconds-before-user-pod-is-deleted
+      every: 300       # 5 mins - number-of-seconds-this-check-is-done
+
+    singleuser:
+#      extraAnnotations:
+#        iam.amazonaws.com/role: ${role_name}
+      networkTools:
+        image:
+          name: jupyterhub/k8s-network-tools
+          tag: 1.1.3
+      networkPolicy:
+        enabled: false
+      defaultUrl: "/lab"
+      memory:
+        limit: 15G
+        guarantee: 14G
+      cpu:
+        limit: 1.8
+        guarantee: 1.6
+      cloudMetadata:
+        # block set to true will append a privileged initContainer using the
+        # iptables to block the sensitive metadata server at the provided ip.
+        blockWithIptables: true
+        ip: 169.254.169.254
+      image:
+        # Docker Hub: https://hub.docker.com/r/geoscienceaustralia/sandbox
+        # Source Repository: https://github.com/geoscienceaustralia/dea-sandbox
+        name: geoscienceaustralia/sandbox
+        tag: 1.0.2
+      extraVolumes:
+        - name: notebooks
+          emptyDir: {}
+        - name: jupyter-notebook-config
+          configMap:
+            name: jupyter-notebook-config
+      extraVolumeMounts:
+        - name: notebooks
+          mountPath: /notebooks
+        - name: jupyter-notebook-config
+          mountPath: /etc/jupyter/jupyter_notebook_config.py
+          subPath: jupyter_notebook_config.py

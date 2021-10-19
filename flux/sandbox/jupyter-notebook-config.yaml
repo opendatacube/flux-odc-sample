@@ -1,0 +1,16 @@
+# NOTE: sync dea-notebooks
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jupyter-notebook-config
+  namespace: sandbox
+data:
+  jupyter_notebook_config.py: |
+    # Clone git repo
+    import subprocess
+    import os
+    repo = "https://github.com/GeoscienceAustralia/dea-notebooks.git"
+    branch = "master"
+    bashCommand = "sync_repo {} {} &> /home/jovyan/.jupyter/startup.log".format(repo, branch)
+    process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+    output, error = process.communicate()
