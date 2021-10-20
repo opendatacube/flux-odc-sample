@@ -1,0 +1,16 @@
+# NOTE: create a new default storage-class name - `standard-gp2` - for cluster/jupyterhub to use.
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard-gp2
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+parameters:
+  type: gp2
+  zones: ap-southeast-1a     # Lock down the AZ to ap-southeast-1a, set the same as sandbox ASG AZ in your infra setup
+  fsType: ext4
+provisioner: kubernetes.io/aws-ebs
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true

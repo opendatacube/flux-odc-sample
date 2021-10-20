@@ -126,7 +126,7 @@ spec:
 #      - ows.${domain_name}
       annotations:
         kubernetes.io/ingress.class: merge
-        merge.ingress.kubernetes.io/config: merged-ingress-external
+        merge.ingress.kubernetes.io/config: merged-ingress
         merge.ingress.kubernetes.io/priority: "0"
     service:
       annotations:

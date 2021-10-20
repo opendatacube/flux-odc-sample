@@ -6,7 +6,7 @@ metadata:
   name: ingress-external-ssl-redirect
   annotations:
     kubernetes.io/ingress.class: merge
-    merge.ingress.kubernetes.io/config: merged-ingress-external
+    merge.ingress.kubernetes.io/config: merged-ingress
     merge.ingress.kubernetes.io/priority: "9999"
 spec:
   rules:

@@ -180,16 +180,7 @@ spec:
         enabled: true
         type: offload
 
-    ingress:
-      enabled: true
-      pathSuffix: "*"
-#      Injected by Flux - using secrets
-#      hosts:
-#      - sandbox.${domain_name}
-      annotations:
-        kubernetes.io/ingress.class: merge
-        merge.ingress.kubernetes.io/config: merged-ingress-sandbox
-        merge.ingress.kubernetes.io/priority: "0"
+    #Injected by Flux - ingress
 
     scheduling:
       userScheduler:
