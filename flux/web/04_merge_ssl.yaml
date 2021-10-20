@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   namespace: web
-  name: ingress-external-ssl-redirect
+  name: ingress-ssl-redirect
   annotations:
     kubernetes.io/ingress.class: merge
     merge.ingress.kubernetes.io/config: merged-ingress
