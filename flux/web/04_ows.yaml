@@ -17,7 +17,7 @@ spec:
     # Helm Charts: https://github.com/opendatacube/datacube-charts/tree/master/stable/datacube-ows
     repository: https://opendatacube.github.io/datacube-charts/charts/
     name: datacube-ows
-    version: 0.18.14
+    version: 0.18.16
   valueFileSecrets:
   - name: ows
   values:
@@ -34,8 +34,8 @@ spec:
       image:
         # Docker Hub: https://hub.docker.com/r/opendatacube/ows
         # Source Repository: https://github.com/opendatacube/datacube-ows
-        tag: "1.8.20"
         repository: opendatacube/ows
+        tag: "1.8.21"
         pullPolicy: IfNotPresent
       dockerArgs:
       - "gunicorn"
@@ -72,30 +72,30 @@ spec:
           memory: 4096Mi
       maxSurge: 25%
       maxUnavailable: 10%
-      startupProbe: # only available in version 1.18
+      startupProbe:
         httpGet:
-          path: /?time=2021-01-07&srs=EPSG%3A3857&transparent=true&format=image%2Fpng&exceptions=application%2Fvnd.ogc.se_xml&styles=&tiled=true&feature_count=101&service=WMS&version=1.1.1&request=GetMap&layers=s2_l2a&bbox=3566245.9916731827%2C1315328.3827313147%2C3566857.4878994636%2C1315939.8789575957&width=256&height=256
+          path: /ping
           port: 8000
-        failureThreshold: 5
-        periodSeconds: 10
+        periodSeconds: 10 # how long to wait between checks
+        failureThreshold: 30 # how many failures to accept before failing
       readinessProbe:
         httpGet:
-          path: /?time=2021-01-07&srs=EPSG%3A3857&transparent=true&format=image%2Fpng&exceptions=application%2Fvnd.ogc.se_xml&styles=&tiled=true&feature_count=101&service=WMS&version=1.1.1&request=GetMap&layers=s2_l2a&bbox=3566245.9916731827%2C1315328.3827313147%2C3566857.4878994636%2C1315939.8789575957&width=256&height=256
+          path: /ping
           port: 8000
-        periodSeconds: 30
         initialDelaySeconds: 10
-        timeoutSeconds: 5
-        successThreshold: 1
-        failureThreshold: 5
+        periodSeconds: 10 # how long to wait between checks
+        successThreshold: 1 # how many successes to hit before accepting
+        failureThreshold: 3 # how many failures to accept before failing
+        timeoutSeconds: 10 # how long to wait for a response
       livenessProbe:
         httpGet:
-          path: /?time=2021-01-07&srs=EPSG%3A3857&transparent=true&format=image%2Fpng&exceptions=application%2Fvnd.ogc.se_xml&styles=&tiled=true&feature_count=101&service=WMS&version=1.1.1&request=GetMap&layers=s2_l2a&bbox=3566245.9916731827%2C1315328.3827313147%2C3566857.4878994636%2C1315939.8789575957&width=256&height=256
+          path: /ping
           port: 8000
-        periodSeconds: 30
         initialDelaySeconds: 10
-        timeoutSeconds: 5
-        successThreshold: 1
-        failureThreshold: 5
+        periodSeconds: 10 # how long to wait between checks
+        successThreshold: 1 # how many successes to hit before accepting
+        failureThreshold: 3 # how many failures to accept before failing
+        timeoutSeconds: 10 # how long to wait for a response
       additionalEnvironmentVars:
         WMS_CONFIG_PATH: /env/config/ows_refactored/ows_root_cfg.py
         DATACUBE_OWS_CFG: "ows_refactored.ows_root_cfg.ows_cfg"
@@ -119,17 +119,7 @@ spec:
         pullPolicy: IfNotPresent
         # src: /opt/dea-config/prod/services/wms/ows/ows_cfg.py
         cfg_folder: /opt/dea-config/prod/services/wms/ows_refactored
-    ingress:
-      enabled: true
-#      Injected by Flux - using secrets
-#      hosts:
-#      - ows.${domain_name}
-      annotations:
-        kubernetes.io/ingress.class: merge
-        merge.ingress.kubernetes.io/config: merged-ingress
-        merge.ingress.kubernetes.io/priority: "0"
+
+    ## Ingress annotations from secret / flux
     service:
-      annotations:
-        alb.ingress.kubernetes.io/healthcheck-path: "/ping"
-        alb.ingress.kubernetes.io/healthcheck-interval-seconds: "60"
-        alb.ingress.kubernetes.io/target-group-attributes: "load_balancing.algorithm.type=least_outstanding_requests"
+      type: ClusterIP

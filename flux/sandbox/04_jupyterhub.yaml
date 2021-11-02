@@ -175,7 +175,7 @@ spec:
           enabled: false
           minAvailable: 1
       service:
-        type: NodePort
+        type: ClusterIP
       https:
         enabled: true
         type: offload
