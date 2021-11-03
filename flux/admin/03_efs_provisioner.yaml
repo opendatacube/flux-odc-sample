@@ -1,19 +1,23 @@
+# WARNING: This setup is using deprecated helm chart: https://github.com/kubernetes/charts/tree/master/stable/efs-provisioner
+#   Consider using the newer efs csi driver - https://github.com/kubernetes-sigs/aws-efs-csi-driver
 ---
 apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
 metadata:
   name: efs-provisioner
-  namespace: kube-system
+  namespace: admin
   annotations:
-    fluxcd.io/ignore: "true"   # temporarily make Flux ignore a manifest if set to true
-    fluxcd.io/automated: "true"
+    fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "false"  # automated deployment of new container images
 spec:
   releaseName: efs-provisioner
+  helmVersion: v3
   chart:
     # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/efs-provisioner
-    repository: https://kubernetes-charts.storage.googleapis.com
+    # RECOMMENDED ACTION After Nov 13, 2020: https://helm.sh/docs/faq/#troubleshooting
+    repository: https://charts.helm.sh/stable
     name: efs-provisioner
-    version: 0.8.0
+    version: 0.13.0
   valueFileSecrets:
   - name: efs-provisioner
   values:
@@ -39,7 +43,7 @@ spec:
     ## https://github.com/kubernetes-incubator/external-storage/tree/master/aws/efs#deployment
     ##
     efsProvisioner:
-      provisionerName: example.com/aws-efs
+      provisionerName: aws-efs
       storageClass:
         name: efs
         isDefault: false
@@ -53,14 +57,18 @@ spec:
           # - acregmax=60
 
     ## Enable RBAC
-    ## Leave serviceAccountName blank for the default name
     ##
-    rbac:
-      create: true
-      serviceAccountName: ""
+    #Injected by Flux - using secrets
+    #rbac:
+    #  create: true
 
-    ## Annotations to be added to deployment
+    ## Create or use ServiceAccount
     ##
+    #Injected by Flux - using secrets
+    #serviceAccount:
+    #  create: true
+    #  annotations:
+    #    eks.amazonaws.com/role-arn: ${service_account_arn}
 
     ## Node labels for pod assignment
     ##

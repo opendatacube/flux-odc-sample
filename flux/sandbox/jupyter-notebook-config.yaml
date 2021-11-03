@@ -1,4 +1,9 @@
+# NOTE: sync dea-notebooks
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jupyter-notebook-config
+  namespace: sandbox
 data:
   jupyter_notebook_config.py: |
     # Clone git repo
@@ -9,8 +14,3 @@ data:
     bashCommand = "sync_repo {} {} &> /home/jovyan/.jupyter/startup.log".format(repo, branch)
     process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output, error = process.communicate()
-
-kind: ConfigMap
-metadata:
-  name: jupyter-notebook-config
-  namespace: sandbox

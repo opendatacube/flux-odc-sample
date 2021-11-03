@@ -5,108 +5,109 @@ metadata:
   name: ows
   namespace: web
   annotations:
-    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
-    fluxcd.io/automated: true  # automated deployment of new container images
-    fluxcd.io/tag.global: glob:*
-    fluxcd.io/tag.wmsConfig: glob:*
+    fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "true"  # automated deployment of new container images
+    fluxcd.io/tag.chart-image: semver:*
+    fluxcd.io/tag.owsConfig: semver:*
+    fluxcd.io/tag.ows: semver:*
 spec:
   releaseName: ows
+  helmVersion: v3
   chart:
-    # Helm Charts: https://github.com/opendatacube/datacube-charts/tree/master/stable/datacube
+    # Helm Charts: https://github.com/opendatacube/datacube-charts/tree/master/stable/datacube-ows
     repository: https://opendatacube.github.io/datacube-charts/charts/
-    name: datacube
-    version: 0.17.10
+    name: datacube-ows
+    version: 0.18.16
   valueFileSecrets:
-    - name: ows
+  - name: ows
   values:
-    image:
-      # Docker Hub: https://hub.docker.com/r/opendatacube/wms
-      # Source Repository: https://github.com/opendatacube/datacube-ows
-      registry: docker.io
-      tag: "0.13.2"
-      repository: opendatacube/ows
-      pullPolicy: IfNotPresent
 #    Injected by Flux - using secrets
 #    database:
 #      database: ${db_name}
 #      host: ${db_hostname}
 #      existingSecret: ${db_secret}
     clusterInfo:
-      envName: dev
+      envName: prod
     minReplicas: 20
     maxReplicas: 50
-    wms:
-#      Injected by Flux - using secrets
-#      annotations:
-#        iam.amazonaws.com/role: ${role_name}
+    ows:
+      image:
+        # Docker Hub: https://hub.docker.com/r/opendatacube/ows
+        # Source Repository: https://github.com/opendatacube/datacube-ows
+        repository: opendatacube/ows
+        tag: "1.8.21"
+        pullPolicy: IfNotPresent
       dockerArgs:
-        - "gunicorn"
-        - "-b"
-        - "0.0.0.0:8000"
-        - "-w"
-        - "3"
-        - "--threads=3"
-        - "-k"
-        - "gevent"
-        - "--timeout"
-        - "121"
-        - "--graceful-timeout"
-        - "121"
-        - "--keep-alive"
-        - "5"
-        - "--pid"
-        - "gunicorn.pid"
-        - "--backlog"
-        - "64"
-        - "--log-level"
-        - "info"
-        - "--worker-tmp-dir"
-        - "/dev/shm"
-        - "datacube_ows.wsgi"
+      - "gunicorn"
+      - "-b"
+      - "0.0.0.0:8000"
+      - "-w"
+      - "3"
+      - "--threads=2"
+      - "-k"
+      - "gevent"
+      - "--timeout"
+      - "121"
+      - "--keep-alive"
+      - "5"
+      - "--pid"
+      - "gunicorn.pid"
+      - "--log-level"
+      - "info"
+      - "--worker-tmp-dir"
+      - "/dev/shm"
+      - "--config"
+      - "python:datacube_ows.gunicorn_config"
+      - "datacube_ows.wsgi"
       enabled: true
       externalPort: 80
       internalPort: 8000
       targetCpu: 250
       resources:
         requests:
-          cpu: "250m"
-          memory: 4096Mi
+          cpu: 1
+          memory: 1024Mi
         limits:
-          cpu: 4
-          memory: 8192Mi
+          cpu: 2
+          memory: 4096Mi
       maxSurge: 25%
       maxUnavailable: 10%
+      startupProbe:
+        httpGet:
+          path: /ping
+          port: 8000
+        periodSeconds: 10 # how long to wait between checks
+        failureThreshold: 30 # how many failures to accept before failing
       readinessProbe:
-        exec:
-          command:
-            - "/bin/sh"
-            - "-c"
-            - "curl --silent 'http://localhost:8000/ping'"
-        periodSeconds: 30
+        httpGet:
+          path: /ping
+          port: 8000
         initialDelaySeconds: 10
-        timeoutSeconds: 5
+        periodSeconds: 10 # how long to wait between checks
+        successThreshold: 1 # how many successes to hit before accepting
+        failureThreshold: 3 # how many failures to accept before failing
+        timeoutSeconds: 10 # how long to wait for a response
       livenessProbe:
-        exec:
-          command:
-            - "/bin/sh"
-            - "-c"
-            - "curl --silent 'http://localhost:8000/ping'"
-        periodSeconds: 30
+        httpGet:
+          path: /ping
+          port: 8000
         initialDelaySeconds: 10
-        timeoutSeconds: 5
-#      Injected by Flux - using secrets
-#      awsCredentialsSecret: ows-user-creds
+        periodSeconds: 10 # how long to wait between checks
+        successThreshold: 1 # how many successes to hit before accepting
+        failureThreshold: 3 # how many failures to accept before failing
+        timeoutSeconds: 10 # how long to wait for a response
       additionalEnvironmentVars:
-        GDAL_DISABLE_READDIR_ON_OPEN: "EMPTY_DIR"
-        CPL_VSIL_CURL_ALLOWED_EXTENSIONS: ".tif"
-        GDAL_HTTP_MAX_RETRY: 10
-        GDAL_HTTP_RETRY_DELAY: 1
-        DATACUBE_OWS_CFG: config.ows_cfg.ows_cfg
-    wmsConfig:
+        WMS_CONFIG_PATH: /env/config/ows_refactored/ows_root_cfg.py
+        DATACUBE_OWS_CFG: "ows_refactored.ows_root_cfg.ows_cfg"
+        AWS_DEFAULT_REGION: ap-southeast-2
+        AWS_NO_SIGN_REQUEST: "YES"
+        prometheus_multiproc_dir: "/dev/shm"  # for prometheus scraper
+        PYTHONPATH: "/env/config"
+    owsConfig:
       # if using docker or configmap
-      path: /opt/config
-      filename: ows_cfg.py
-      subPath: config
+      path: /env/config
+      # filename: ows_cfg.py
+      # subPath: config
       # configMap: cfg_map_name
       # url: cfg_url
       image:
@@ -114,29 +115,11 @@ spec:
         # Source Repository: https://github.com/GeoscienceAustralia/dea-config
         registry: docker.io
         repository: geoscienceaustralia/dea-datakube-config
-        tag: "1.4.10-unstable.5.g266d1d0"
+        tag: "1.5.14"
         pullPolicy: IfNotPresent
-        src: /opt/dea-config/dev/services/wms/ows/ows_cfg.py
-    ingress:
-      enabled: true
-#      Injected by Flux - using secrets
-#      hosts:
-#      - ows.${domain_name}
-      annotations:
-        kubernetes.io/ingress.class: merge
-        merge.ingress.kubernetes.io/config: merged-ingress
-        merge.ingress.kubernetes.io/priority: "0"
+        # src: /opt/dea-config/prod/services/wms/ows/ows_cfg.py
+        cfg_folder: /opt/dea-config/prod/services/wms/ows_refactored
+
+    ## Ingress annotations from secret / flux
     service:
-      annotations:
-        alb.ingress.kubernetes.io/healthcheck-path: "/ping"
-        alb.ingress.kubernetes.io/healthcheck-interval-seconds: "60"
-        alb.ingress.kubernetes.io/target-group-attributes: "load_balancing.algorithm.type=least_outstanding_requests"
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: nodetype
-                  operator: NotIn
-                  values:
-                    - spot
+      type: ClusterIP

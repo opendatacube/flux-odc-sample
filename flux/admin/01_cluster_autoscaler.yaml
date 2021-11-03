@@ -5,34 +5,50 @@ metadata:
   name: cluster-autoscaler
   namespace: admin
   annotations:
-    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
-    fluxcd.io/automated: true  # automated deployment of new container images
-    filter.fluxcd.io/chart-image: semver:v1.14.6
+    fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "false"  # automated deployment of new container images
 spec:
   releaseName: cluster-autoscaler
+  helmVersion: v3
   chart:
-    # Helm Charts: https://github.com/kubernetes/charts/tree/master/stable/cluster-autoscaler
-    repository: https://kubernetes-charts.storage.googleapis.com
+    ## Helm Charts:  https://github.com/kubernetes/autoscaler/tree/master/charts/cluster-autoscaler
+    repository: https://kubernetes.github.io/autoscaler
     name: cluster-autoscaler
-    version: 6.2.0
+    version: 9.3.0
   valueFileSecrets:
     - name: cluster-autoscaler
   values:
     image:
-      repository: k8s.gcr.io/cluster-autoscaler
-      tag: v1.14.6
+      repository: k8s.gcr.io/autoscaling/cluster-autoscaler
+      tag: v1.18.3
       pullPolicy: IfNotPresent
-    rbac:
-      create: true
     sslCertPath: /etc/kubernetes/pki/ca.crt
     extraArgs:
       scale-down-unneeded-time: "10m"
       balance-similar-node-groups: true
       skip-nodes-with-system-pods: false
+      expander: least-waste
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodetype
+                  operator: In
+                  values:
+                    - ondemand
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - eks
 
 #    Injected by Flux - using secrets
-#    podAnnotations:
-#      iam.amazonaws.com/role: ${cluster_name}-autoscaler
+#    rbac:
+#      create: true
+#      serviceAccount:
+#        create: true
+#        annotations:
+#          eks.amazonaws.com/role-arn: ${service_account_arn}
 #    autoDiscovery:
 #      clusterName: ${cluster_name}
 #    cloudProvider: aws

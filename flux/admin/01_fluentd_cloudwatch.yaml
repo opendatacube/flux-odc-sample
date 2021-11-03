@@ -1,3 +1,5 @@
+# WARNING: This setup is using deprecated helm chart: https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch
+#   See aws recommendation: https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-setup-logs.html
 ---
 apiVersion: helm.fluxcd.io/v1
 kind: HelmRelease
@@ -5,22 +7,21 @@ metadata:
   name: fluentd-cloudwatch
   namespace: admin
   annotations:
-    fluxcd.io/ignore: false   # temporarily make Flux ignore a manifest if set to true
-    fluxcd.io/automated: true  # automated deployment of new container images
-    filter.fluxcd.io/chart-image: semver:v1.7.3-debian-cloudwatch-1.0
+    fluxcd.io/ignore: "false"   # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "false"  # automated deployment of new container images
 spec:
   releaseName: fluentd-cloudwatch
   chart:
     # Helm Charts: https://github.com/helm/charts/tree/master/incubator/fluentd-cloudwatch
     repository: https://kubernetes-charts-incubator.storage.googleapis.com
     name: fluentd-cloudwatch
-    version: 0.12.1
+    version: 0.13.2
   valueFileSecrets:
     - name: fluentd-cloudwatch
   values:
     image:
       repository: fluent/fluentd-kubernetes-daemonset
-      tag: v1.7.3-debian-cloudwatch-1.0
+      tag: v1.14.1-debian-cloudwatch-1.0
       pullPolicy: IfNotPresent
     rbac:
       create: true
@@ -33,8 +34,24 @@ spec:
       requests:
         cpu: 100m
         memory: 200Mi
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: nodetype
+                  operator: In
+                  values:
+                    - ondemand
+                - key: nodegroup
+                  operator: In
+                  values:
+                    - eks
 
 #    Injected by Flux - using secrets
-#    awsRole: ${cluster_name}-fluentd
+#    rbac:
+#      serviceAccount:
+#        annotations:
+#          eks.amazonaws.com/role-arn: "${service_account_arn}"
 #    logGroupName: ${cluster_name}-logs
 #    awsRegion: ${region}

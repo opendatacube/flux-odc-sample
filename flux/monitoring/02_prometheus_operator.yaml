@@ -1,0 +1,148 @@
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: prometheus-operator
+  namespace: monitoring
+  annotations:
+    fluxcd.io/ignore: "false"     # temporarily make Flux ignore a manifest if set to true
+    fluxcd.io/automated: "false"  # automated deployment of new container images
+spec:
+  releaseName: prometheus-operator
+  helmVersion: v3
+  chart:
+    # Helm Charts: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+    repository: https://prometheus-community.github.io/helm-charts
+    name: kube-prometheus-stack
+    version: 13.13.1
+  valueFileSecrets:
+    - name: prometheus-grafana
+  values:
+    ## Manages Prometheus and Alertmanager components
+    prometheusOperator:
+      ## Prometheus-operator image
+      image:
+        repository: quay.io/prometheus-operator/prometheus-operator
+        tag: v0.45.0
+        pullPolicy: IfNotPresent
+      ## Disable admissionWebhooks due to issue: https://lyz-code.github.io/blue-book/devops/prometheus/prometheus_troubleshooting/#failed-calling-webhook-prometheusrulemutatemonitoringcoreoscom
+      admissionWebhooks:
+        enabled: false
+        patch:
+          enabled: false
+      tls:
+        enabled: false
+
+    ## Manages Grafana
+    ## See default values from https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
+    grafana:
+      image:
+        repository: grafana/grafana
+        tag: 7.4.2
+        pullPolicy: IfNotPresent
+      initChownData:
+        image:
+          repository: public.ecr.aws/runecast/busybox
+          tag: 1.32.1
+      sidecar:
+        image:
+          repository: quay.io/kiwigrid/k8s-sidecar
+          tag: 1.10.6
+#      Injected by Flux - using secrets
+#      # AWS EKS cloudwatch setup as per grafana doc
+#      serviceAccount:
+#        create: true
+#        name: grafana-datasource-cloudwatch-sa
+#        annotations:
+#          eks.amazonaws.com/role-arn: <role-arn>
+#      ## Additional grafana server secret mounts
+#      extraSecretMounts:
+#        - name: aws-iam-token
+#          mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+#          readOnly: true
+#          projected:
+#            defaultMode: 420
+#            sources:
+#              - serviceAccountToken:
+#                  audience: sts.amazonaws.com
+#                  expirationSeconds: 86400
+#                  path: token
+#      ingress:
+#        enabled: true
+#        annotations:
+#          kubernetes.io/ingress.class: alb
+#          alb.ingress.kubernetes.io/scheme: internet-facing
+#          alb.ingress.kubernetes.io/target-type: ip
+#          alb.ingress.kubernetes.io/healthcheck-path: "/metrics"
+#          alb.ingress.kubernetes.io/certificate-arn: ${certificate_arn}
+#          alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+#        hosts:
+#          - monitor.${domain_name}
+#        path: /*
+#      env:
+#        GF_SERVER_ROOT_URL: https://monitor.${domain_name}/  # Replace
+#      # force chart to generate password as prometheus-operator-grafana secret
+#      adminPassword: null
+#      ## Sidecars that collect the configmaps with specified label and stores the included files them into the respective folders
+#      ## Requires at least Grafana 5 to work and can't be used together with parameters dashboardProviders, datasources and dashboards
+#      sidecar:
+#        image:
+#          repository: kiwigrid/k8s-sidecar
+#          tag: 0.1.151
+#        imagePullPolicy: IfNotPresent
+#        # Automatically load any configmaps with grafana_datasource=1 in the monitoring namespace into grafana as a datasource
+#        datasources:
+#          enabled: true
+#          # label that the configmaps with datasources are marked with
+#          label: grafana_datasource
+#      grafana.ini:
+#        # Keep default values
+#        paths:
+#          data: /var/lib/grafana/data
+#          logs: /var/log/grafana
+#          plugins: /var/lib/grafana/plugins
+#          provisioning: /etc/grafana/provisioning
+#        analytics:
+#          check_for_updates: true
+#        log:
+#          mode: console
+#        grafana_net:
+#          url: https://grafana.net
+#        # Configure oauth
+#        auth.generic_oauth:
+#          enabled: true
+#          allow_sign_up: true
+#          client_id: ${cognito_client_id}
+#          client_secret: ${cognito_client_secret}
+#          scopes: openid aws.cognito.signin.user.admin email
+#          auth_url: https://${cognito_userpool_domain}.auth.${cognito_region}.amazoncognito.com/oauth2/authorize
+#          token_url: https://${cognito_userpool_domain}.auth.${cognito_region}.amazoncognito.com/oauth2/token
+#          api_url: https://${cognito_userpool_domain}.auth.${cognito_region}.amazoncognito.com/oauth2/userInfo
+
+    ## Deploy a Prometheus instance
+    prometheus:
+      prometheusSpec:
+        ## Prometheus StorageSpec for persistent data
+        ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/master/Documentation/user-guides/storage.md
+        retention: 7d
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: efs
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 100Gi
+      additionalServiceMonitors:
+        - name: prometheus-ows-app
+          jobLabel: ows-scraper
+          namespaceSelector:
+            matchNames:
+              - web
+          selector:
+            matchLabels:
+              app: datacube-ows
+          endpoints:
+            - interval: 10s
+              port: "80"
+              path: /metrics
